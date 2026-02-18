@@ -55,6 +55,14 @@ const tesserinAPI = {
             set: (key, value) => electron_1.ipcRenderer.invoke('db:settings:set', key, value),
             getAll: () => electron_1.ipcRenderer.invoke('db:settings:getAll'),
         },
+        // ── Database: Canvases ─────────────────────────────────────────
+        canvases: {
+            list: () => electron_1.ipcRenderer.invoke('db:canvases:list'),
+            get: (id) => electron_1.ipcRenderer.invoke('db:canvases:get', id),
+            create: (data) => electron_1.ipcRenderer.invoke('db:canvases:create', data),
+            update: (id, data) => electron_1.ipcRenderer.invoke('db:canvases:update', id, data),
+            delete: (id) => electron_1.ipcRenderer.invoke('db:canvases:delete', id),
+        },
     },
     // ── AI (Ollama) ───────────────────────────────────────────────────
     ai: {

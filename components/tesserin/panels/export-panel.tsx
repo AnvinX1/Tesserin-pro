@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react"
 import { FiDownload, FiFileText, FiCode, FiFile, FiCopy, FiCheck } from "react-icons/fi"
-import { SkeuoPanel } from "./skeuo-panel"
+import { SkeuoPanel } from "../core/skeuo-panel"
 import { useNotes, type Note } from "@/lib/notes-store"
 
 /**

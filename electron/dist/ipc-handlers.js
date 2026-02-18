@@ -76,6 +76,12 @@ function registerIpcHandlers() {
     electron_1.ipcMain.handle('db:settings:get', (_e, key) => db.getSetting(key));
     electron_1.ipcMain.handle('db:settings:set', (_e, key, value) => db.setSetting(key, value));
     electron_1.ipcMain.handle('db:settings:getAll', () => db.getAllSettings());
+    // ── Canvases ──────────────────────────────────────────────────────
+    electron_1.ipcMain.handle('db:canvases:list', () => db.listCanvases());
+    electron_1.ipcMain.handle('db:canvases:get', (_e, id) => db.getCanvas(id));
+    electron_1.ipcMain.handle('db:canvases:create', (_e, data) => db.createCanvas(data));
+    electron_1.ipcMain.handle('db:canvases:update', (_e, id, data) => db.updateCanvas(id, data));
+    electron_1.ipcMain.handle('db:canvases:delete', (_e, id) => db.deleteCanvas(id));
     // ── AI ────────────────────────────────────────────────────────────
     electron_1.ipcMain.handle('ai:chat', async (_e, messages, model) => {
         return ai.chat(messages, model);

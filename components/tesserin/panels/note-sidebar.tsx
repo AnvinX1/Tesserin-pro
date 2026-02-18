@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react"
 import { FiSearch, FiPlus, FiFileText, FiLink2, FiList, FiClock, FiX } from "react-icons/fi"
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
-import { SkeuoPanel } from "./skeuo-panel"
+import { SkeuoPanel } from "../core/skeuo-panel"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */

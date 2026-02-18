@@ -1,13 +1,49 @@
-# v0 runtime files (should only exist in preview, not in git)
+# ── Dependencies ──
+node_modules/
+
+# ── Build outputs ──
+dist/
+release/
+electron/dist/
+*.tsbuildinfo
+
+# ── Electron ──
+*.dmg
+*.AppImage
+*.snap
+*.deb
+*.rpm
+*.exe
+*.msi
+*.blockmap
+*.yml
+
+# ── Environment ──
+.env
+.env.*
+!.env.example
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE ──
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Next.js leftovers (removed) ──
+.next/
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 
-# Common ignores
-node_modules/
-.next/
-.env*.local
-.DS_Store
-
-# Build artifacts
-dist/
+# ── Misc ──
+*.log
+npm-debug.log*
+pnpm-debug.log*

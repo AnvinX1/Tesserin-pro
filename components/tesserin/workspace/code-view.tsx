@@ -6,7 +6,7 @@ import {
   FiActivity, FiClock, FiDatabase, FiMap, FiPieChart, FiGitCommit, FiUsers, FiList, FiGrid, FiTrendingUp, FiImage
 } from "react-icons/fi"
 import { HiOutlineSparkles } from "react-icons/hi2"
-import { useTesserinTheme } from "./theme-provider"
+import { useTesserinTheme } from "../core/theme-provider"
 
 /**
  * CodeView (Agentic Workflow Generator)

@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react"
 import { FiLayers, FiPlus, FiCopy, FiCheck, FiClipboard, FiTarget, FiBook, FiCalendar, FiTrendingUp, FiCpu, FiMessageSquare, FiFileText } from "react-icons/fi"
 import { HiOutlineSparkles } from "react-icons/hi2"
-import { SkeuoPanel } from "./skeuo-panel"
+import { SkeuoPanel } from "../core/skeuo-panel"
 import { useNotes } from "@/lib/notes-store"
 
 /**

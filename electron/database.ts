@@ -21,11 +21,15 @@ export function initDatabase(): void {
     const dbPath = getDbPath()
     db = new Database(dbPath)
 
-    // Enable WAL mode for better performance
-    db.pragma('journal_mode = WAL')
-    db.pragma('foreign_keys = ON')
+    // ── Pragmas for production-grade performance & safety ────────────
+    db.pragma('journal_mode = WAL')          // Write-Ahead Logging
+    db.pragma('foreign_keys = ON')           // Enforce FK constraints
+    db.pragma('busy_timeout = 5000')         // Wait up to 5s on lock contention
+    db.pragma('synchronous = NORMAL')        // Safe with WAL, faster than FULL
+    db.pragma('cache_size = -64000')         // 64MB page cache
+    db.pragma('temp_store = MEMORY')         // Temp tables in memory
 
-    // Create tables
+    // ── Core schema ─────────────────────────────────────────────────
     db.exec(`
     CREATE TABLE IF NOT EXISTS folders (
       id        TEXT PRIMARY KEY,
@@ -42,6 +46,7 @@ export function initDatabase(): void {
       folder_id   TEXT REFERENCES folders(id) ON DELETE SET NULL,
       is_daily    INTEGER DEFAULT 0,
       is_pinned   INTEGER DEFAULT 0,
+      is_archived INTEGER DEFAULT 0,
       created_at  TEXT DEFAULT (datetime('now')),
       updated_at  TEXT DEFAULT (datetime('now'))
     );
@@ -62,26 +67,62 @@ export function initDatabase(): void {
       id         TEXT PRIMARY KEY,
       title      TEXT NOT NULL,
       note_id    TEXT REFERENCES notes(id) ON DELETE SET NULL,
-      status     TEXT DEFAULT 'todo',
-      priority   INTEGER DEFAULT 0,
+      status     TEXT NOT NULL DEFAULT 'backlog',
+      priority   INTEGER NOT NULL DEFAULT 0 CHECK(priority BETWEEN 0 AND 3),
       due_date   TEXT,
-      column_id  TEXT DEFAULT 'backlog',
+      column_id  TEXT NOT NULL DEFAULT 'backlog',
       sort_order INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS templates (
-      id       TEXT PRIMARY KEY,
-      name     TEXT NOT NULL,
-      content  TEXT DEFAULT '',
-      category TEXT DEFAULT 'general'
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      content    TEXT DEFAULT '',
+      category   TEXT DEFAULT 'general',
+      created_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS canvases (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL DEFAULT 'Untitled Canvas',
+      elements    TEXT DEFAULT '[]',
+      app_state   TEXT DEFAULT '{}',
+      files       TEXT DEFAULT '{}',
+      created_at  TEXT DEFAULT (datetime('now')),
+      updated_at  TEXT DEFAULT (datetime('now'))
+    );
+
+    /* ── Indexes for query patterns ── */
+    CREATE INDEX IF NOT EXISTS idx_notes_folder     ON notes(folder_id);
+    CREATE INDEX IF NOT EXISTS idx_notes_updated     ON notes(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_notes_pinned      ON notes(is_pinned DESC, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_notes_title       ON notes(title COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_notes_daily       ON notes(is_daily) WHERE is_daily = 1;
+    CREATE INDEX IF NOT EXISTS idx_tasks_column      ON tasks(column_id, sort_order);
+    CREATE INDEX IF NOT EXISTS idx_tasks_status      ON tasks(status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_due         ON tasks(due_date) WHERE due_date IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_note_tags_tag     ON note_tags(tag_id);
+    CREATE INDEX IF NOT EXISTS idx_folders_parent    ON folders(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_canvases_updated  ON canvases(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_templates_cat     ON templates(category, name);
   `)
+
+    // ── Schema migrations for existing databases ────────────────────
+    // Safely add columns that may not exist in older DBs
+    const migrations = [
+        "ALTER TABLE notes ADD COLUMN is_archived INTEGER DEFAULT 0",
+        "ALTER TABLE tasks ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))",
+    ]
+    for (const sql of migrations) {
+        try { db.exec(sql) } catch { /* column already exists — safe to skip */ }
+    }
 
     // Seed data if fresh database
     const count = db.prepare('SELECT COUNT(*) as c FROM notes').get() as { c: number }
@@ -145,7 +186,7 @@ export function createNote(data: { title?: string; content?: string; folderId?: 
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(id)
 }
 
-export function updateNote(id: string, data: { title?: string; content?: string; folderId?: string; isPinned?: boolean }) {
+export function updateNote(id: string, data: { title?: string; content?: string; folderId?: string; isPinned?: boolean; isArchived?: boolean }) {
     const sets: string[] = []
     const values: unknown[] = []
 
@@ -153,6 +194,7 @@ export function updateNote(id: string, data: { title?: string; content?: string;
     if (data.content !== undefined) { sets.push('content = ?'); values.push(data.content) }
     if (data.folderId !== undefined) { sets.push('folder_id = ?'); values.push(data.folderId) }
     if (data.isPinned !== undefined) { sets.push('is_pinned = ?'); values.push(data.isPinned ? 1 : 0) }
+    if (data.isArchived !== undefined) { sets.push('is_archived = ?'); values.push(data.isArchived ? 1 : 0) }
 
     sets.push("updated_at = datetime('now')")
     values.push(id)
@@ -226,14 +268,15 @@ export function deleteFolder(id: string) {
 // ── Task Operations ───────────────────────────────────────────────────
 
 export function listTasks() {
-    return db.prepare('SELECT * FROM tasks ORDER BY sort_order, created_at DESC').all()
+    return db.prepare('SELECT * FROM tasks ORDER BY column_id, sort_order, created_at DESC').all()
 }
 
 export function createTask(data: { title: string; noteId?: string; columnId?: string; priority?: number; dueDate?: string }) {
     const id = randomUUID()
+    const columnId = data.columnId || 'backlog'
     db.prepare(
-        'INSERT INTO tasks (id, title, note_id, column_id, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(id, data.title, data.noteId || null, data.columnId || 'backlog', data.priority || 0, data.dueDate || null)
+        'INSERT INTO tasks (id, title, note_id, status, column_id, priority, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, data.title, data.noteId || null, columnId, columnId, data.priority ?? 0, data.dueDate || null)
     return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
 }
 
@@ -253,7 +296,14 @@ export function updateTask(id: string, data: Record<string, unknown>) {
         }
     }
 
+    // Keep status in sync with column_id
+    if (data.columnId !== undefined && data.status === undefined) {
+        sets.push('status = ?')
+        values.push(data.columnId)
+    }
+
     if (sets.length === 0) return
+    sets.push("updated_at = datetime('now')")
     values.push(id)
     db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...values)
     return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
@@ -303,4 +353,44 @@ export function getAllSettings(): Record<string, string> {
         result[row.key] = row.value
     }
     return result
+}
+
+// ── Canvas Operations ─────────────────────────────────────────────────
+
+export function listCanvases() {
+    return db.prepare('SELECT id, name, created_at, updated_at FROM canvases ORDER BY updated_at DESC').all()
+}
+
+export function getCanvas(id: string) {
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id)
+}
+
+export function createCanvas(data: { id?: string; name?: string; elements?: string; appState?: string; files?: string }) {
+    const id = data.id || randomUUID()
+    const name = data.name || 'Untitled Canvas'
+    db.prepare(
+        'INSERT INTO canvases (id, name, elements, app_state, files) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, name, data.elements || '[]', data.appState || '{}', data.files || '{}')
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id)
+}
+
+export function updateCanvas(id: string, data: { name?: string; elements?: string; appState?: string; files?: string }) {
+    const sets: string[] = []
+    const values: unknown[] = []
+
+    if (data.name !== undefined) { sets.push('name = ?'); values.push(data.name) }
+    if (data.elements !== undefined) { sets.push('elements = ?'); values.push(data.elements) }
+    if (data.appState !== undefined) { sets.push('app_state = ?'); values.push(data.appState) }
+    if (data.files !== undefined) { sets.push('files = ?'); values.push(data.files) }
+
+    if (sets.length === 0) return
+    sets.push("updated_at = datetime('now')")
+    values.push(id)
+
+    db.prepare(`UPDATE canvases SET ${sets.join(', ')} WHERE id = ?`).run(...values)
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id)
+}
+
+export function deleteCanvas(id: string) {
+    return db.prepare('DELETE FROM canvases WHERE id = ?').run(id)
 }

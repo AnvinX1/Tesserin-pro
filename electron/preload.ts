@@ -65,6 +65,17 @@ const tesserinAPI = {
             set: (key: string, value: string) => ipcRenderer.invoke('db:settings:set', key, value),
             getAll: () => ipcRenderer.invoke('db:settings:getAll'),
         },
+
+        // ── Database: Canvases ─────────────────────────────────────────
+        canvases: {
+            list: () => ipcRenderer.invoke('db:canvases:list'),
+            get: (id: string) => ipcRenderer.invoke('db:canvases:get', id),
+            create: (data: { id?: string; name?: string; elements?: string; appState?: string; files?: string }) =>
+                ipcRenderer.invoke('db:canvases:create', data),
+            update: (id: string, data: { name?: string; elements?: string; appState?: string; files?: string }) =>
+                ipcRenderer.invoke('db:canvases:update', id, data),
+            delete: (id: string) => ipcRenderer.invoke('db:canvases:delete', id),
+        },
     },
 
     // ── AI (Ollama) ───────────────────────────────────────────────────
@@ -72,6 +83,11 @@ const tesserinAPI = {
         chat: (messages: Array<{ role: string; content: string }>, model?: string) =>
             ipcRenderer.invoke('ai:chat', messages, model),
         chatStream: (messages: Array<{ role: string; content: string }>, model?: string) => {
+            // Remove any stale listeners from a previous stream BEFORE starting a new one
+            ipcRenderer.removeAllListeners('ai:chat:stream:chunk')
+            ipcRenderer.removeAllListeners('ai:chat:stream:done')
+            ipcRenderer.removeAllListeners('ai:chat:stream:error')
+
             ipcRenderer.send('ai:chat:stream', messages, model)
             return {
                 onChunk: (callback: (chunk: string) => void) => {

@@ -1,6 +1,13 @@
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { FiPlus, FiMenu, FiTrash2, FiCalendar, FiFlag, FiMoreHorizontal, FiClipboard, FiList, FiTool, FiCheckCircle } from "react-icons/fi"
-import { SkeuoPanel } from "./skeuo-panel"
+import { SkeuoPanel } from "../core/skeuo-panel"
+import {
+    listTasks,
+    createTask as storageCreateTask,
+    updateTask as storageUpdateTask,
+    deleteTask as storageDeleteTask,
+    type StorageTask,
+} from "@/lib/storage-client"
 
 /**
  * KanbanView
@@ -8,6 +15,7 @@ import { SkeuoPanel } from "./skeuo-panel"
  * A drag-and-drop Kanban board for task management.
  * Columns: Backlog, To Do, In Progress, Done
  * Tasks can be dragged between columns.
+ * Fully persisted to SQLite (Electron) or localStorage (dev).
  */
 
 interface Task {
@@ -40,28 +48,40 @@ const PRIORITY_LABELS: Record<number, string> = {
     3: "High",
 }
 
-let _taskCounter = 0
-function taskId() {
-    return `task_${Date.now()}_${++_taskCounter}`
+/** Convert a StorageTask (snake_case DB row) to local Task (camelCase UI). */
+function toTask(st: StorageTask): Task {
+    return {
+        id: st.id,
+        title: st.title,
+        status: st.status,
+        priority: st.priority,
+        columnId: st.column_id,
+        dueDate: st.due_date ?? undefined,
+    }
 }
 
-const SEED_TASKS: Task[] = [
-    { id: taskId(), title: "Set up project architecture", status: "done", priority: 3, columnId: "done" },
-    { id: taskId(), title: "Design database schema", status: "done", priority: 2, columnId: "done" },
-    { id: taskId(), title: "Implement AI chat integration", status: "in_progress", priority: 3, columnId: "in_progress" },
-    { id: taskId(), title: "Build search palette (Cmd+K)", status: "in_progress", priority: 2, columnId: "in_progress" },
-    { id: taskId(), title: "Create template system", status: "todo", priority: 1, columnId: "todo" },
-    { id: taskId(), title: "Add export to PDF", status: "todo", priority: 1, columnId: "todo" },
-    { id: taskId(), title: "Dark/light mode persistence", status: "todo", priority: 2, columnId: "todo" },
-    { id: taskId(), title: "Mobile responsive layout", status: "backlog", priority: 0, columnId: "backlog" },
-    { id: taskId(), title: "Plugin system architecture", status: "backlog", priority: 0, columnId: "backlog" },
-]
-
 export function KanbanView() {
-    const [tasks, setTasks] = useState<Task[]>(SEED_TASKS)
+    const [tasks, setTasks] = useState<Task[]>([])
+    const [loaded, setLoaded] = useState(false)
     const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
     const [newTaskTitle, setNewTaskTitle] = useState("")
     const [addingToColumn, setAddingToColumn] = useState<string | null>(null)
+
+    /* ---- Load from storage on mount ---- */
+    useEffect(() => {
+        let cancelled = false
+        listTasks()
+            .then(rows => {
+                if (cancelled) return
+                setTasks(rows.map(toTask))
+                setLoaded(true)
+            })
+            .catch(err => {
+                console.error("[Kanban] Failed to load tasks:", err)
+                setLoaded(true)
+            })
+        return () => { cancelled = true }
+    }, [])
 
     const tasksByColumn = useMemo(() => {
         const map: Record<string, Task[]> = {}
@@ -77,37 +97,54 @@ export function KanbanView() {
 
     const handleDrop = useCallback((columnId: string) => {
         if (!draggedTaskId) return
+        // Optimistic UI update
         setTasks(prev =>
             prev.map(t =>
                 t.id === draggedTaskId ? { ...t, columnId, status: columnId } : t
             )
+        )
+        // Persist
+        storageUpdateTask(draggedTaskId, { columnId }).catch(err =>
+            console.error("[Kanban] Failed to move task:", err)
         )
         setDraggedTaskId(null)
     }, [draggedTaskId])
 
     const handleAddTask = useCallback((columnId: string) => {
         if (!newTaskTitle.trim()) return
-        const task: Task = {
-            id: taskId(),
-            title: newTaskTitle.trim(),
-            status: columnId,
-            priority: 0,
-            columnId,
-        }
-        setTasks(prev => [...prev, task])
+        const title = newTaskTitle.trim()
         setNewTaskTitle("")
         setAddingToColumn(null)
+
+        // Persist first, then add to state with real ID
+        storageCreateTask({ title, columnId, priority: 0 })
+            .then(saved => {
+                setTasks(prev => [...prev, toTask(saved)])
+            })
+            .catch(err => console.error("[Kanban] Failed to create task:", err))
     }, [newTaskTitle])
 
     const handleDeleteTask = useCallback((id: string) => {
+        // Optimistic
         setTasks(prev => prev.filter(t => t.id !== id))
+        storageDeleteTask(id).catch(err =>
+            console.error("[Kanban] Failed to delete task:", err)
+        )
     }, [])
 
     const cyclePriority = useCallback((id: string) => {
+        let newPriority = 0
         setTasks(prev =>
-            prev.map(t =>
-                t.id === id ? { ...t, priority: (t.priority + 1) % 4 } : t
-            )
+            prev.map(t => {
+                if (t.id === id) {
+                    newPriority = (t.priority + 1) % 4
+                    return { ...t, priority: newPriority }
+                }
+                return t
+            })
+        )
+        storageUpdateTask(id, { priority: newPriority }).catch(err =>
+            console.error("[Kanban] Failed to update priority:", err)
         )
     }, [])
 

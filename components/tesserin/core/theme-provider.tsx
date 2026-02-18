@@ -170,6 +170,26 @@ const THEME_STYLES = `
     0% { width: 0%; }
     100% { width: 100%; }
   }
+
+  /* ── Global UI readability ────────────────────────────────── */
+  html {
+    /* Use 18px root instead of browser default 16px.
+       All rem-based Tailwind utilities (text-xs, text-sm, etc.)
+       and spacing scale up proportionally without breaking
+       viewport-height layouts (no zoom overflow). */
+    font-size: 18px;
+  }
+
+  .theme-dark, .theme-light {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Floor tiny pixel text sizes for comfortable reading */
+  .text-\[9px\]  { font-size: 11px !important; }
+  .text-\[10px\] { font-size: 12px !important; }
+  .text-\[11px\] { font-size: 13px !important; }
 `
 
 /* ------------------------------------------------------------------ */

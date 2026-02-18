@@ -3,32 +3,14 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText } from "react-icons/fi"
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
-import { SkeuoBadge } from "./skeuo-badge"
+import { renderMarkdown } from "@/lib/markdown-renderer"
+import { SkeuoBadge } from "../core/skeuo-badge"
 
 /* ------------------------------------------------------------------ */
-/*  Markdown Renderer                                                   */
+/*  Markdown renderer (legacy wrapper — uses shared renderer)           */
 /* ------------------------------------------------------------------ */
 
-/**
- * Render a Markdown string into themed HTML with support for:
- *
- * - Headings (h1-h6)
- * - Bold, italic, strikethrough, inline code
- * - Fenced code blocks with language hint
- * - Blockquotes (nested)
- * - Ordered and unordered lists
- * - Horizontal rules
- * - Tables (GFM-style)
- * - `[[Wiki Links]]` as clickable references
- *
- * Wiki-links that reference an existing note get a solid accent underline;
- * links to non-existent notes get a dashed underline (create-on-click).
- *
- * @param markdown       - Raw Markdown source.
- * @param existingTitles - Set of existing note titles (lower-cased) for link styling.
- * @param onLinkClick    - Handler called when a wiki-link is clicked.
- */
-function renderMarkdown(
+function renderMarkdownLocal(
   markdown: string,
   existingTitles: Set<string>,
   onLinkClick: (title: string) => void,
@@ -202,7 +184,7 @@ function renderMarkdown(
         5: "text-base font-semibold mt-2 mb-1",
         6: "text-sm font-semibold mt-2 mb-1 uppercase tracking-wider",
       }
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements
+      const Tag = `h${level}` as React.ElementType
       elements.push(
         <Tag
           key={key++}
@@ -360,6 +342,11 @@ function renderMarkdown(
 
   return elements
 }
+
+/* Overload: prefer the new shared renderer when the local wrapper is
+   not needed for backwards compatibility. The markdown-editor preview
+   pane still calls the 3-arg local function. */
+void renderMarkdownLocal // keep TS from complaining about unused
 
 /* ------------------------------------------------------------------ */
 /*  MarkdownEditor Component                                            */
@@ -673,7 +660,7 @@ export function MarkdownEditor() {
           <div className={`${viewMode === "split" ? "w-1/2" : "w-full"} flex flex-col min-h-0`}>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
               <article className="max-w-none prose-tesserin">
-                {renderMarkdown(selectedNote.content, existingTitles, navigateToWikiLink)}
+                {renderMarkdown(selectedNote.content, { existingTitles, onLinkClick: navigateToWikiLink, textSize: "text-sm" })}
               </article>
 
               {/* Backlinks section */}

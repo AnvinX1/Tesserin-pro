@@ -11,9 +11,9 @@ import { TesserinLogo } from "./tesserin-logo"
 export function TitleBar() {
     const isElectron = typeof window !== 'undefined' && window.tesserin?.window
 
-    const handleMinimize = () => isElectron && window.tesserin.window.minimize()
-    const handleMaximize = () => isElectron && window.tesserin.window.maximize()
-    const handleClose = () => isElectron && window.tesserin.window.close()
+    const handleMinimize = () => window.tesserin?.window.minimize()
+    const handleMaximize = () => window.tesserin?.window.maximize()
+    const handleClose = () => window.tesserin?.window.close()
 
     return (
         <div

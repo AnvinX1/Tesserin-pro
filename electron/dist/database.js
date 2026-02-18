@@ -32,6 +32,11 @@ exports.deleteTemplate = deleteTemplate;
 exports.getSetting = getSetting;
 exports.setSetting = setSetting;
 exports.getAllSettings = getAllSettings;
+exports.listCanvases = listCanvases;
+exports.getCanvas = getCanvas;
+exports.createCanvas = createCanvas;
+exports.updateCanvas = updateCanvas;
+exports.deleteCanvas = deleteCanvas;
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const electron_1 = require("electron");
 const path_1 = __importDefault(require("path"));
@@ -109,6 +114,16 @@ function initDatabase() {
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,
       value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS canvases (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL DEFAULT 'Untitled Canvas',
+      elements    TEXT DEFAULT '[]',
+      app_state   TEXT DEFAULT '{}',
+      files       TEXT DEFAULT '{}',
+      created_at  TEXT DEFAULT (datetime('now')),
+      updated_at  TEXT DEFAULT (datetime('now'))
     );
   `);
     // Seed data if fresh database
@@ -285,5 +300,47 @@ function getAllSettings() {
         result[row.key] = row.value;
     }
     return result;
+}
+// ── Canvas Operations ─────────────────────────────────────────────────
+function listCanvases() {
+    return db.prepare('SELECT id, name, created_at, updated_at FROM canvases ORDER BY updated_at DESC').all();
+}
+function getCanvas(id) {
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id);
+}
+function createCanvas(data) {
+    const id = data.id || (0, crypto_1.randomUUID)();
+    const name = data.name || 'Untitled Canvas';
+    db.prepare('INSERT INTO canvases (id, name, elements, app_state, files) VALUES (?, ?, ?, ?, ?)').run(id, name, data.elements || '[]', data.appState || '{}', data.files || '{}');
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id);
+}
+function updateCanvas(id, data) {
+    const sets = [];
+    const values = [];
+    if (data.name !== undefined) {
+        sets.push('name = ?');
+        values.push(data.name);
+    }
+    if (data.elements !== undefined) {
+        sets.push('elements = ?');
+        values.push(data.elements);
+    }
+    if (data.appState !== undefined) {
+        sets.push('app_state = ?');
+        values.push(data.appState);
+    }
+    if (data.files !== undefined) {
+        sets.push('files = ?');
+        values.push(data.files);
+    }
+    if (sets.length === 0)
+        return;
+    sets.push("updated_at = datetime('now')");
+    values.push(id);
+    db.prepare(`UPDATE canvases SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+    return db.prepare('SELECT * FROM canvases WHERE id = ?').get(id);
+}
+function deleteCanvas(id) {
+    return db.prepare('DELETE FROM canvases WHERE id = ?').run(id);
 }
 //# sourceMappingURL=database.js.map

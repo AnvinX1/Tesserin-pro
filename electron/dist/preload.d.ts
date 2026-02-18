@@ -65,6 +65,24 @@ declare const tesserinAPI: {
             set: (key: string, value: string) => Promise<any>;
             getAll: () => Promise<any>;
         };
+        canvases: {
+            list: () => Promise<any>;
+            get: (id: string) => Promise<any>;
+            create: (data: {
+                id?: string;
+                name?: string;
+                elements?: string;
+                appState?: string;
+                files?: string;
+            }) => Promise<any>;
+            update: (id: string, data: {
+                name?: string;
+                elements?: string;
+                appState?: string;
+                files?: string;
+            }) => Promise<any>;
+            delete: (id: string) => Promise<any>;
+        };
     };
     ai: {
         chat: (messages: Array<{

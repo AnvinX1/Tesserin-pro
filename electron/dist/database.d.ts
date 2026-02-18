@@ -50,4 +50,20 @@ export declare function deleteTemplate(id: string): Database.RunResult;
 export declare function getSetting(key: string): string | null;
 export declare function setSetting(key: string, value: string): void;
 export declare function getAllSettings(): Record<string, string>;
+export declare function listCanvases(): unknown[];
+export declare function getCanvas(id: string): unknown;
+export declare function createCanvas(data: {
+    id?: string;
+    name?: string;
+    elements?: string;
+    appState?: string;
+    files?: string;
+}): unknown;
+export declare function updateCanvas(id: string, data: {
+    name?: string;
+    elements?: string;
+    appState?: string;
+    files?: string;
+}): unknown;
+export declare function deleteCanvas(id: string): Database.RunResult;
 //# sourceMappingURL=database.d.ts.map

@@ -47,6 +47,13 @@ export function registerIpcHandlers(): void {
     ipcMain.handle('db:settings:set', (_e, key: string, value: string) => db.setSetting(key, value))
     ipcMain.handle('db:settings:getAll', () => db.getAllSettings())
 
+    // ── Canvases ──────────────────────────────────────────────────────
+    ipcMain.handle('db:canvases:list', () => db.listCanvases())
+    ipcMain.handle('db:canvases:get', (_e, id: string) => db.getCanvas(id))
+    ipcMain.handle('db:canvases:create', (_e, data) => db.createCanvas(data))
+    ipcMain.handle('db:canvases:update', (_e, id: string, data) => db.updateCanvas(id, data))
+    ipcMain.handle('db:canvases:delete', (_e, id: string) => db.deleteCanvas(id))
+
     // ── AI ────────────────────────────────────────────────────────────
     ipcMain.handle('ai:chat', async (_e, messages, model?) => {
         return ai.chat(messages, model)

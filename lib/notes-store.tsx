@@ -189,8 +189,20 @@ export function NotesProvider({ children }: NotesProviderProps) {
     setNotes((prev) => [newNote, ...prev])
     setSelectedNoteId(id)
 
-    // Persist to SQLite
-    storage.createNote({ id, title: noteTitle, content }).catch(() => { })
+    // Persist to SQLite — let the DB create the row, then update local ID if needed
+    storage.createNote({ title: noteTitle, content }).then((dbNote) => {
+      if (dbNote?.id && dbNote.id !== id) {
+        // Replace the temp ID with the real DB-assigned ID
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === id
+              ? { ...n, id: dbNote.id, createdAt: dbNote.created_at || n.createdAt, updatedAt: dbNote.updated_at || n.updatedAt }
+              : n
+          )
+        )
+        setSelectedNoteId((prev) => (prev === id ? dbNote.id : prev))
+      }
+    }).catch(() => { })
 
     return id
   }, [])
@@ -250,7 +262,18 @@ export function NotesProvider({ children }: NotesProviderProps) {
         setNotes((prev) => [newNote, ...prev])
         setSelectedNoteId(id)
 
-        storage.createNote({ id, title, content }).catch(() => { })
+        storage.createNote({ title, content }).then((dbNote) => {
+          if (dbNote?.id && dbNote.id !== id) {
+            setNotes((prev) =>
+              prev.map((n) =>
+                n.id === id
+                  ? { ...n, id: dbNote.id, createdAt: dbNote.created_at || n.createdAt, updatedAt: dbNote.updated_at || n.updatedAt }
+                  : n
+              )
+            )
+            setSelectedNoteId((prev) => (prev === id ? dbNote.id : prev))
+          }
+        }).catch(() => { })
       }
     },
     [notes],

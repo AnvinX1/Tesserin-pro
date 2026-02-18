@@ -1,22 +1,29 @@
 import React, { useState, useEffect, useCallback } from "react"
 
-import { TesserinThemeProvider } from "@/components/tesserin/theme-provider"
-import { SkeuoPanel } from "@/components/tesserin/skeuo-panel"
-import { LeftDock, type TabId } from "@/components/tesserin/left-dock"
-import { FloatingAIChat } from "@/components/tesserin/floating-ai-chat"
-import { BottomTimeline } from "@/components/tesserin/bottom-timeline"
-import { LoadingScreen } from "@/components/tesserin/loading-screen"
-import { MarkdownEditor } from "@/components/tesserin/markdown-editor"
-import { CreativeCanvas } from "@/components/tesserin/creative-canvas"
-import { D3GraphView } from "@/components/tesserin/d3-graph-view"
-import { CodeView } from "@/components/tesserin/code-view"
-import { NoteSidebar } from "@/components/tesserin/note-sidebar"
-import { KanbanView } from "@/components/tesserin/kanban-view"
-import { DailyNotes } from "@/components/tesserin/daily-notes"
-import { SearchPalette } from "@/components/tesserin/search-palette"
-import { ExportPanel } from "@/components/tesserin/export-panel"
-import { TemplateManager } from "@/components/tesserin/template-manager"
-import { TitleBar } from "@/components/tesserin/title-bar"
+// Core
+import { TesserinThemeProvider } from "@/components/tesserin/core/theme-provider"
+import { SkeuoPanel } from "@/components/tesserin/core/skeuo-panel"
+import { LoadingScreen } from "@/components/tesserin/core/loading-screen"
+import { TitleBar } from "@/components/tesserin/core/title-bar"
+
+// Panels
+import { LeftDock, type TabId } from "@/components/tesserin/panels/left-dock"
+import { NoteSidebar } from "@/components/tesserin/panels/note-sidebar"
+import { FloatingAIChat } from "@/components/tesserin/panels/floating-ai-chat"
+import { SearchPalette } from "@/components/tesserin/panels/search-palette"
+import { ExportPanel } from "@/components/tesserin/panels/export-panel"
+import { TemplateManager } from "@/components/tesserin/panels/template-manager"
+
+// Workspace
+import { MarkdownEditor } from "@/components/tesserin/workspace/markdown-editor"
+import { CreativeCanvas } from "@/components/tesserin/workspace/creative-canvas"
+import { D3GraphView } from "@/components/tesserin/workspace/d3-graph-view"
+import { CodeView } from "@/components/tesserin/workspace/code-view"
+import { KanbanView } from "@/components/tesserin/workspace/kanban-view"
+import { DailyNotes } from "@/components/tesserin/workspace/daily-notes"
+import { SAMNode } from "@/components/tesserin/workspace/sam-node"
+import { SettingsPanel } from "@/components/tesserin/panels/settings-panel"
+
 import { NotesProvider, useNotes } from "@/lib/notes-store"
 
 /**
@@ -91,20 +98,20 @@ function AppContent() {
                             />
                         )}
 
-                        {/* Active workspace panel */}
+                        {/* Active workspace panel – all panels stay mounted, only the active one is visible.
+                            This prevents Excalidraw (and other stateful components) from losing state on tab switch. */}
                         <SkeuoPanel className="flex-1 h-full flex flex-col overflow-hidden">
-                            {activeTab === "notes" && <MarkdownEditor />}
-                            {activeTab === "canvas" && <CreativeCanvas />}
-                            {activeTab === "graph" && <D3GraphView />}
-                            {activeTab === "code" && <CodeView />}
-                            {activeTab === "kanban" && <KanbanView />}
-                            {activeTab === "daily" && <DailyNotes />}
+                            <div className={`w-full h-full ${activeTab === "notes" ? "" : "hidden"}`}><MarkdownEditor /></div>
+                            <div className={`w-full h-full ${activeTab === "canvas" ? "" : "hidden"}`}><CreativeCanvas /></div>
+                            <div className={`w-full h-full ${activeTab === "graph" ? "" : "hidden"}`}><D3GraphView /></div>
+                            <div className={`w-full h-full ${activeTab === "code" ? "" : "hidden"}`}><CodeView /></div>
+                            <div className={`w-full h-full ${activeTab === "kanban" ? "" : "hidden"}`}><KanbanView /></div>
+                            <div className={`w-full h-full ${activeTab === "daily" ? "" : "hidden"}`}><DailyNotes /></div>
+                            <div className={`w-full h-full ${activeTab === "sam" ? "" : "hidden"}`}><SAMNode /></div>
+                            <div className={`w-full h-full ${activeTab === "settings" ? "" : "hidden"}`}><SettingsPanel /></div>
                         </SkeuoPanel>
                     </div>
                 </main>
-
-                {/* ── Bottom Timeline ── */}
-                <BottomTimeline />
             </div>
 
             {/* ── Floating AI Chat ── */}
