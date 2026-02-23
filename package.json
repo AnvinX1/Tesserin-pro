@@ -1,6 +1,6 @@
 {
   "name": "tesserin",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Tesserin – AI-native productivity workspace with knowledge graphs, creative canvas, and local-first storage",
   "author": "Anvin <gooseinteandi@gmail.com>",
@@ -36,7 +36,9 @@
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dmg",
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": "nsis",

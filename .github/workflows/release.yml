@@ -69,6 +69,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Import Apple signing certs
+        if: matrix.os == 'macos-latest'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+
       - name: Build renderer
         run: pnpm build
 
@@ -79,6 +86,10 @@ jobs:
         run: pnpm electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "true"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -94,5 +105,4 @@ jobs:
             release/latest*.yml
           if-no-files-found: ignore
           retention-days: 30
-
 
