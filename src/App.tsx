@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Component, type ErrorInfo, type ReactNode } from "react"
+import React, { useState, useEffect, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from "react"
 
 // Core
 import { TesserinThemeProvider } from "@/components/tesserin/core/theme-provider"
