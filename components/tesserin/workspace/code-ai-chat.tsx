@@ -265,12 +265,12 @@ function validateToolCall(call: ToolCall): string | null {
 
   switch (call.tool) {
     case "read_file":
-    case "write_file":
     case "list_dir":
     case "mkdir":
       if (!call.args.path || typeof call.args.path !== "string") return `${call.tool}: missing path argument`
       break
     case "write_file":
+      if (!call.args.path || typeof call.args.path !== "string") return "write_file: missing path argument"
       if (typeof call.args.content !== "string") return "write_file: missing content argument"
       break
     case "run_command":

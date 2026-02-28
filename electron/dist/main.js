@@ -137,19 +137,19 @@ electron_1.app.whenReady().then(() => {
         ? [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline'", // Vite HMR needs inline scripts
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind + inline styles + Google Fonts
+            "style-src 'self' 'unsafe-inline'", // Tailwind + inline styles
             "connect-src 'self' ws://localhost:* http://localhost:*", // Vite WS + Ollama
             "img-src 'self' data: blob:",
-            "font-src 'self' data: https://fonts.gstatic.com",
+            "font-src 'self' data: https://esm.sh",
             "worker-src 'self' blob:",
         ].join('; ')
         : [
             "default-src 'self'",
             "script-src 'self'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind runtime styles + Google Fonts
+            "style-src 'self' 'unsafe-inline'", // Tailwind runtime styles
             `connect-src 'self' ${ollamaOrigin}`, // Ollama (from settings)
             "img-src 'self' data: blob:",
-            "font-src 'self' data: https://fonts.gstatic.com",
+            "font-src 'self' data: https://esm.sh",
             "worker-src 'self' blob:",
         ].join('; ');
     electron_1.session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
