@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react"
 import {
-  FiFolderPlus, FiTerminal, FiMessageSquare, FiCode, FiX, FiChevronUp, FiChevronDown,
+  FiFolderPlus, FiMessageSquare, FiCode, FiX, FiChevronUp, FiChevronDown,
   FiSave, FiMaximize2, FiColumns, FiLayout, FiZap, FiArrowRight,
 } from "react-icons/fi"
 import { HiOutlineSparkles } from "react-icons/hi2"
@@ -9,7 +9,6 @@ import { useTesserinTheme } from "../core/theme-provider"
 import { CodeEditor, detectLanguage } from "./code-editor"
 import { CodeFileTree } from "./code-file-tree"
 import { CodeAIChat, type CodeAIChatHandle } from "./code-ai-chat"
-import { CodeTerminal } from "./code-terminal"
 
 interface OpenFile {
   path: string
@@ -91,10 +90,8 @@ export function CodeView() {
 
   // Layout state
   const [showSidebar, setShowSidebar] = useState(true)
-  const [showTerminal, setShowTerminal] = useState(false)
   const [showAIChat, setShowAIChat] = useState(true)
   const sidebar = useResize(220, 140, 400, "horizontal")
-  const terminal = useResize(220, 100, 500, "vertical")
   const aiChat = useResizeRight(340, 240, 600)
 
   // Project state
@@ -187,11 +184,6 @@ export function CodeView() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+` or Cmd+` to toggle terminal
-      if ((e.ctrlKey || e.metaKey) && e.key === "`") {
-        e.preventDefault()
-        setShowTerminal(prev => !prev)
-      }
       // Ctrl+B or Cmd+B to toggle sidebar
       if ((e.ctrlKey || e.metaKey) && e.key === "b") {
         e.preventDefault()
@@ -284,14 +276,6 @@ export function CodeView() {
             title="Toggle Explorer"
           >
             <FiColumns size={13} />
-          </button>
-          <button
-            onClick={() => setShowTerminal(!showTerminal)}
-            className={`skeuo-btn w-7 h-7 rounded-lg flex items-center justify-center transition-all ${showTerminal ? 'brightness-110' : ''}`}
-            style={{ color: showTerminal ? "var(--accent-primary)" : "var(--text-muted)" }}
-            title="Toggle Terminal"
-          >
-            <FiTerminal size={13} />
           </button>
           <button
             onClick={() => setShowAIChat(!showAIChat)}
@@ -509,39 +493,6 @@ export function CodeView() {
             )}
           </div>
 
-          {/* Terminal Panel */}
-          {showTerminal && (
-            <div
-              className="border-t shrink-0 overflow-hidden"
-              style={{ height: terminal.size, borderColor: "var(--border-dark)" }}
-            >
-              {/* Terminal resize handle */}
-              <div
-                className="h-1 cursor-row-resize hover:bg-amber-500/30 active:bg-amber-500/50 transition-colors"
-                onMouseDown={terminal.onMouseDown}
-              />
-              <div
-                className="h-7 border-b flex items-center px-3 justify-between shrink-0"
-                style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <FiTerminal size={11} className="text-amber-500" />
-                  <span className="text-[10px] font-semibold" style={{ color: "var(--text-secondary)" }}>
-                    Terminal
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowTerminal(false)}
-                  className="opacity-40 hover:opacity-100 transition-opacity"
-                >
-                  <FiX size={12} style={{ color: "var(--text-muted)" }} />
-                </button>
-              </div>
-              <div style={{ height: terminal.size - 32 }}>
-                <CodeTerminal cwd={projectPath || undefined} isDark={isDark} />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* AI Chat Panel */}

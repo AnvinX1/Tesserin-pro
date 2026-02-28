@@ -136,25 +136,6 @@ const tesserinAPI = {
         getTools: () => electron_1.ipcRenderer.invoke('mcp:getTools'),
         getServerTools: (serverId) => electron_1.ipcRenderer.invoke('mcp:getServerTools', serverId),
     },
-    // ── Terminal (node-pty) ───────────────────────────────────────────
-    terminal: {
-        spawn: (cwd) => electron_1.ipcRenderer.invoke('terminal:spawn', cwd),
-        write: (id, data) => electron_1.ipcRenderer.send('terminal:write', id, data),
-        resize: (id, cols, rows) => electron_1.ipcRenderer.send('terminal:resize', id, cols, rows),
-        kill: (id) => electron_1.ipcRenderer.send('terminal:kill', id),
-        onData: (id, callback) => {
-            const channel = `terminal:data:${id}`;
-            const listener = (_e, data) => callback(data);
-            electron_1.ipcRenderer.on(channel, listener);
-            return () => { electron_1.ipcRenderer.removeListener(channel, listener); };
-        },
-        onExit: (id, callback) => {
-            const channel = `terminal:exit:${id}`;
-            const listener = (_e, code) => callback(code);
-            electron_1.ipcRenderer.on(channel, listener);
-            return () => { electron_1.ipcRenderer.removeListener(channel, listener); };
-        },
-    },
     // ── Filesystem ────────────────────────────────────────────────────
     fs: {
         readDir: (dirPath) => electron_1.ipcRenderer.invoke('fs:readDir', dirPath),

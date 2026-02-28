@@ -167,26 +167,6 @@ const tesserinAPI = {
         getServerTools: (serverId: string) => ipcRenderer.invoke('mcp:getServerTools', serverId),
     },
 
-    // ── Terminal (node-pty) ───────────────────────────────────────────
-    terminal: {
-        spawn: (cwd?: string) => ipcRenderer.invoke('terminal:spawn', cwd) as Promise<{ id: string; pid: number }>,
-        write: (id: string, data: string) => ipcRenderer.send('terminal:write', id, data),
-        resize: (id: string, cols: number, rows: number) => ipcRenderer.send('terminal:resize', id, cols, rows),
-        kill: (id: string) => ipcRenderer.send('terminal:kill', id),
-        onData: (id: string, callback: (data: string) => void) => {
-            const channel = `terminal:data:${id}`
-            const listener = (_e: Electron.IpcRendererEvent, data: string) => callback(data)
-            ipcRenderer.on(channel, listener)
-            return () => { ipcRenderer.removeListener(channel, listener) }
-        },
-        onExit: (id: string, callback: (exitCode: number) => void) => {
-            const channel = `terminal:exit:${id}`
-            const listener = (_e: Electron.IpcRendererEvent, code: number) => callback(code)
-            ipcRenderer.on(channel, listener)
-            return () => { ipcRenderer.removeListener(channel, listener) }
-        },
-    },
-
     // ── Filesystem ────────────────────────────────────────────────────
     fs: {
         readDir: (dirPath: string) => ipcRenderer.invoke('fs:readDir', dirPath) as Promise<Array<{ name: string; path: string; isDirectory: boolean }>>,

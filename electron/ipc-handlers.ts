@@ -3,7 +3,6 @@ import * as db from './database'
 import * as ai from './ai-service'
 import { mcpClientManager, type McpServerConfig } from './mcp-client'
 import { generateApiKey, startApiServer, stopApiServer, getApiServerStatus } from './api-server'
-import * as pty from 'node-pty'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
@@ -284,56 +283,6 @@ export function registerIpcHandlers(): void {
 
     ipcMain.handle('mcp:getServerTools', async (_e, serverId: string) => {
         return mcpClientManager.getServerTools(serverId)
-    })
-
-    // ── Terminal (node-pty) ───────────────────────────────────────────
-    const terminals = new Map<string, pty.IPty>()
-    let terminalIdCounter = 0
-
-    ipcMain.handle('terminal:spawn', (event, cwd?) => {
-        const id = `term-${++terminalIdCounter}`
-        const shell = os.platform() === 'win32' ? 'powershell.exe' : (process.env.SHELL || '/bin/bash')
-        const safeCwd = cwd ? validatePath(cwd, 'cwd') : os.homedir()
-        const term = pty.spawn(shell, [], {
-            name: 'xterm-256color',
-            cols: 80,
-            rows: 24,
-            cwd: safeCwd,
-            env: safeEnv(),
-        })
-
-        terminals.set(id, term)
-
-        term.onData((data: string) => {
-            event.sender.send(`terminal:data:${id}`, data)
-        })
-
-        term.onExit(({ exitCode }: { exitCode: number }) => {
-            event.sender.send(`terminal:exit:${id}`, exitCode)
-            terminals.delete(id)
-        })
-
-        return { id, pid: term.pid }
-    })
-
-    ipcMain.on('terminal:write', (_e, id: string, data: string) => {
-        if (typeof id !== 'string' || typeof data !== 'string') return
-        terminals.get(id)?.write(data)
-    })
-
-    ipcMain.on('terminal:resize', (_e, id: string, cols: number, rows: number) => {
-        if (typeof id !== 'string') return
-        const safeCols = Math.max(1, Math.min(cols || 80, 500))
-        const safeRows = Math.max(1, Math.min(rows || 24, 200))
-        terminals.get(id)?.resize(safeCols, safeRows)
-    })
-
-    ipcMain.on('terminal:kill', (_e, id: string) => {
-        const term = terminals.get(id)
-        if (term) {
-            term.kill()
-            terminals.delete(id)
-        }
     })
 
     // ── Filesystem ────────────────────────────────────────────────────

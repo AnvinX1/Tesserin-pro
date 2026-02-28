@@ -125,8 +125,7 @@
     "@radix-ui/react-toggle": "1.1.10",
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "1.2.8",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
+
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "^11.0.0",
     "class-variance-authority": "^0.7.1",
@@ -138,7 +137,7 @@
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",
     "mermaid": "^11.12.2",
-    "node-pty": "^1.1.0",
+
     "pptxgenjs": "^4.0.1",
     "react": "19.2.4",
     "react-day-picker": "^9.0.0",
@@ -177,8 +176,7 @@
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "electron",
-      "esbuild",
-      "node-pty"
+      "esbuild"
     ]
   }
 }

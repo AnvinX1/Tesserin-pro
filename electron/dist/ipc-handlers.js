@@ -39,7 +39,6 @@ const db = __importStar(require("./database"));
 const ai = __importStar(require("./ai-service"));
 const mcp_client_1 = require("./mcp-client");
 const api_server_1 = require("./api-server");
-const pty = __importStar(require("node-pty"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
@@ -297,49 +296,6 @@ function registerIpcHandlers() {
     });
     electron_1.ipcMain.handle('mcp:getServerTools', async (_e, serverId) => {
         return mcp_client_1.mcpClientManager.getServerTools(serverId);
-    });
-    // ── Terminal (node-pty) ───────────────────────────────────────────
-    const terminals = new Map();
-    let terminalIdCounter = 0;
-    electron_1.ipcMain.handle('terminal:spawn', (event, cwd) => {
-        const id = `term-${++terminalIdCounter}`;
-        const shell = os.platform() === 'win32' ? 'powershell.exe' : (process.env.SHELL || '/bin/bash');
-        const safeCwd = cwd ? validatePath(cwd, 'cwd') : os.homedir();
-        const term = pty.spawn(shell, [], {
-            name: 'xterm-256color',
-            cols: 80,
-            rows: 24,
-            cwd: safeCwd,
-            env: safeEnv(),
-        });
-        terminals.set(id, term);
-        term.onData((data) => {
-            event.sender.send(`terminal:data:${id}`, data);
-        });
-        term.onExit(({ exitCode }) => {
-            event.sender.send(`terminal:exit:${id}`, exitCode);
-            terminals.delete(id);
-        });
-        return { id, pid: term.pid };
-    });
-    electron_1.ipcMain.on('terminal:write', (_e, id, data) => {
-        if (typeof id !== 'string' || typeof data !== 'string')
-            return;
-        terminals.get(id)?.write(data);
-    });
-    electron_1.ipcMain.on('terminal:resize', (_e, id, cols, rows) => {
-        if (typeof id !== 'string')
-            return;
-        const safeCols = Math.max(1, Math.min(cols || 80, 500));
-        const safeRows = Math.max(1, Math.min(rows || 24, 200));
-        terminals.get(id)?.resize(safeCols, safeRows);
-    });
-    electron_1.ipcMain.on('terminal:kill', (_e, id) => {
-        const term = terminals.get(id);
-        if (term) {
-            term.kill();
-            terminals.delete(id);
-        }
     });
     // ── Filesystem ────────────────────────────────────────────────────
     electron_1.ipcMain.handle('fs:readDir', async (_e, dirPath) => {
