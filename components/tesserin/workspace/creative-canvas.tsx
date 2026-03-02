@@ -8,7 +8,7 @@ import "@excalidraw/excalidraw/index.css"
 import { TesserinLogo } from "../core/tesserin-logo"
 import { TesseradrawLogo } from "./tesseradraw-logo"
 import { AnimatedIcon } from "../core/animated-icon"
-import { ScribbledPlus, ScribbledSearch, ScribbledZap } from "../core/scribbled-icons"
+import { ScribbledPlus, ScribbledSearch, ScribbledZap, ScribbledExpand, ScribbledCollapse } from "../core/scribbled-icons"
 import * as storage from "@/lib/storage-client"
 import { useTesserinTheme } from "@/components/tesserin/core/theme-provider"
 import { useNotes, type Note } from "@/lib/notes-store"
@@ -193,7 +193,7 @@ function NotePickerPanel({
 
   return (
     <div
-      className="skeuo-panel absolute top-3 right-3 z-50 w-64 overflow-hidden"
+      className="skeuo-panel absolute top-3 left-3 z-50 w-64 overflow-hidden"
     >
       <div
         className="px-3 py-2.5 flex items-center gap-2"
@@ -293,6 +293,9 @@ export function CreativeCanvas() {
   /** True while loading canvas data — shows a solid overlay so no blank/stale-scene flash */
   const [isTransitioning, setIsTransitioning] = useState(true)
   const readyToSave = useRef(false)
+  /** Full-board mode — uses native Fullscreen API for zero-glitch takeover */
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   /** Canvas scene queued when data loads before Excalidraw's onAPI fires (first-mount race) */
   const pendingSceneRef = useRef<{ elements: any[]; appState: any; files?: any } | null>(null)
   /** Library items read once on mount for Excalidraw's initialData (shared across canvases) */
@@ -308,6 +311,23 @@ export function CreativeCanvas() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null)
   const aiInsertPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  // Sync isFullscreen state with native fullscreenchange events (handles Escape key natively)
+  useEffect(() => {
+    const handler = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", handler)
+    return () => document.removeEventListener("fullscreenchange", handler)
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+    } else {
+      canvasContainerRef.current?.requestFullscreen()
+    }
+  }, [])
 
   // Load canvas list on mount
   useEffect(() => {
@@ -351,7 +371,11 @@ export function CreativeCanvas() {
 
   /** Handle new canvas creation from tab bar */
   const handleCreateCanvas = useCallback(async () => {
-    // Flush current canvas before switching
+    // Cancel debounced save and flush current canvas before switching
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
     saveNowRef.current?.()
     await createCanvas("Untitled Canvas")
   }, [createCanvas])
@@ -360,7 +384,12 @@ export function CreativeCanvas() {
   const handleSelectCanvas = useCallback(
     (id: string) => {
       if (id === activeCanvasId) return
-      // Flush current canvas
+      // Cancel any pending debounced save so it doesn't land on the new canvas
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+      // Flush current canvas immediately
       saveNowRef.current?.()
       setActiveCanvas(id)
     },
@@ -413,6 +442,11 @@ export function CreativeCanvas() {
     let cancelled = false
     setIsTransitioning(true)
     readyToSave.current = false
+    // Cancel any pending debounced save from the previous canvas
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
 
     async function loadCanvas() {
       let elements: any[] = []
@@ -453,8 +487,18 @@ export function CreativeCanvas() {
       const sceneData = { elements, appState, ...(files ? { files } : {}) }
 
       if (apiRef.current) {
-        // Excalidraw already mounted — swap scene without remounting (zero flicker)
-        apiRef.current.updateScene(sceneData)
+        // Excalidraw already mounted — clear old scene then load new data.
+        // First mark all existing elements as deleted, then add the new ones.
+        // This is the safe Excalidraw pattern to replace the scene without remounting.
+        const oldElements = apiRef.current.getSceneElementsIncludingDeleted()
+        const cleared = oldElements.map((el: any) => ({ ...el, isDeleted: true }))
+        apiRef.current.updateScene({
+          elements: [...cleared, ...elements],
+          appState,
+          ...(files ? { files } : {}),
+        })
+        // Clear history so undo doesn't resurrect elements from the previous canvas
+        apiRef.current.history.clear()
         setIsTransitioning(false)
       } else {
         // Excalidraw not yet mounted on first render — queue for onAPI
@@ -524,7 +568,14 @@ export function CreativeCanvas() {
     (elements: readonly any[], appState: Record<string, any>) => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
 
+      // Snapshot the canvas ID NOW so the debounced callback saves to the correct canvas
+      const targetCanvasId = canvasIdRef.current
+      if (!targetCanvasId) return
+
       saveTimerRef.current = setTimeout(() => {
+        // Double-check we're still on the same canvas; abort if user已 switched
+        if (canvasIdRef.current !== targetCanvasId) return
+
         try {
           // Pick only persistable appState keys
           const persistAppState: Record<string, any> = {}
@@ -534,15 +585,13 @@ export function CreativeCanvas() {
 
           const elementsJson = JSON.stringify(elements)
           const appStateJson = JSON.stringify(persistAppState)
-          const canvasId = canvasIdRef.current
-          if (!canvasId) return
 
           // Write to localStorage synchronously as backup
           try {
-            const lsKey = `tesserin:canvas:${canvasId}`
+            const lsKey = `tesserin:canvas:${targetCanvasId}`
             const existing = localStorage.getItem(lsKey)
             const canvas = existing ? JSON.parse(existing) : {
-              id: canvasId,
+              id: targetCanvasId,
               name: "Canvas",
               files: "{}",
               created_at: new Date().toISOString(),
@@ -555,7 +604,7 @@ export function CreativeCanvas() {
 
           // Also save via IPC/storage API
           storage
-            .updateCanvas(canvasId, {
+            .updateCanvas(targetCanvasId, {
               elements: elementsJson,
               appState: appStateJson,
             })
@@ -801,6 +850,12 @@ export function CreativeCanvas() {
       background: transparent !important;
     }
 
+    /* ── Hide the keyboard-shortcut help button (?) ── */
+    .excalidraw .HelpButton,
+    .excalidraw [aria-label="Help"] {
+      display: none !important;
+    }
+
     /* ── Welcome screen hint text ── */
     .excalidraw.theme--dark .welcome-screen-decor-hint {
       color: #888888 !important;
@@ -915,6 +970,12 @@ export function CreativeCanvas() {
       background: transparent !important;
     }
 
+    /* ── Hide the keyboard-shortcut help button (?) in light mode too ── */
+    .tesserin-canvas-light .excalidraw .HelpButton,
+    .tesserin-canvas-light .excalidraw [aria-label="Help"] {
+      display: none !important;
+    }
+
     .tesserin-canvas-light .excalidraw .welcome-screen-decor-hint {
       color: #a8a399 !important;
     }
@@ -997,6 +1058,7 @@ export function CreativeCanvas() {
 
   return (
     <div
+      ref={canvasContainerRef}
       className={`w-full h-full flex flex-col relative ${!isDark ? 'tesserin-canvas-light' : ''}`}
       style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
     >
@@ -1079,11 +1141,11 @@ export function CreativeCanvas() {
           </WelcomeScreen.Center>
         </WelcomeScreen>
       </Excalidraw>
-      {/* Insert Note button — shown when canvas is ready */}
+      {/* Insert Note button — positioned top-left to avoid Excalidraw's top-right controls */}
       {!isTransitioning && activeCanvasId && !showNotePicker && (
         <button
           onClick={() => setShowNotePicker(true)}
-          className="skeuo-btn absolute top-3 right-3 z-40 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold transition-all"
+          className="skeuo-btn absolute top-3 left-3 z-40 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold transition-all"
           style={{
             color: "var(--accent-primary)",
             borderRadius: "var(--radius-btn)",
@@ -1107,6 +1169,25 @@ export function CreativeCanvas() {
           className="absolute inset-0 z-30"
           style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
         />
+      )}
+
+      {/* Full-board toggle button — bottom-right corner */}
+      {activeCanvasId && (
+        <button
+          onClick={toggleFullscreen}
+          className="skeuo-btn absolute bottom-3 right-3 z-40 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all"
+          style={{
+            color: isFullscreen ? "var(--text-on-accent)" : "var(--accent-primary)",
+            backgroundColor: isFullscreen ? "var(--accent-primary)" : undefined,
+            borderRadius: "var(--radius-btn)",
+          }}
+          title={isFullscreen ? "Exit full board (Esc)" : "Full board mode"}
+        >
+          {isFullscreen
+            ? <><ScribbledCollapse size={13} /> Exit Full Board</>
+            : <><ScribbledExpand size={13} /> Full Board</>
+          }
+        </button>
       )}
 
       {/* Right-click context menu — neumorphic popover */}
