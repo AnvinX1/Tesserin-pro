@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.pastel-twilight",
+    name: "Pastel Twilight",
+    author: "Tesserin Community",
+    description: "Muted pastel dark theme — soft sunset hues with dusty purple, peach, and slate.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#1E1B2E", "#DDA0DD", "#E8D5E0"],
+    category: "pastel",
+    downloads: 10200,
+    rating: 4.7,
+    colors: {
+      "--bg-app": "#1E1B2E",
+      "--bg-panel": "linear-gradient(145deg, #2A2640, #1E1B2E)",
+      "--bg-panel-inset": "#171426",
+      "--text-primary": "#E8D5E0",
+      "--text-secondary": "#B8A0B5",
+      "--text-tertiary": "#7A6878",
+      "--text-on-accent": "#1E1B2E",
+      "--accent-primary": "#DDA0DD",
+      "--accent-pressed": "#CC88CC",
+      "--border-light": "rgba(221, 160, 221, 0.08)",
+      "--border-dark": "rgba(0, 0, 0, 0.35)",
+      "--panel-outer-shadow": "5px 5px 15px rgba(0,0,0,0.3), -1px -1px 4px #2A2640",
+      "--btn-shadow": "4px 4px 8px rgba(0,0,0,0.3), -1px -1px 3px #2A2640",
+      "--input-inner-shadow": "inset 2px 2px 5px rgba(0,0,0,0.3), inset -1px -1px 2px #2A2640",
+      "--graph-node": "#3D365A",
+      "--graph-link": "#2E2848",
+      "--code-bg": "#171426",
+      "--tooltip-bg": "#2A2640",
+      "--tooltip-text": "#E8D5E0",
+      "--tooltip-border": "rgba(221, 160, 221, 0.15)",
+    },
+    styles: {
+      "--radius-panel": "22px",
+      "--radius-btn": "16px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-2px",
+      "--scrollbar-radius": "10px",
+    },
+  }
+
+export default theme

@@ -1,7 +1,9 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import * as db from './database'
 import * as ai from './ai-service'
+import * as kb from './knowledge-base'
 import { mcpClientManager, type McpServerConfig } from './mcp-client'
+import { cloudAgentManager, type CloudAgentType, type AgentPermission } from './cloud-agents'
 import { generateApiKey, startApiServer, stopApiServer, getApiServerStatus } from './api-server'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -451,5 +453,111 @@ export function registerIpcHandlers(): void {
             return pptLib.generateAndSavePptx(specOrMarkdown as any, safePath)
         }
         throw new Error('Invalid spec: expected a DeckSpec object or markdown string')
+    })
+
+    // ── Cloud Agents ─────────────────────────────────────────────────
+    ipcMain.handle('agents:list', () => {
+        return cloudAgentManager.listAgents()
+    })
+
+    ipcMain.handle('agents:statuses', () => {
+        return cloudAgentManager.getStatuses()
+    })
+
+    ipcMain.handle('agents:register', (_e, type: string, config?: Record<string, unknown>) => {
+        const validTypes: CloudAgentType[] = ['claude-code', 'gemini-cli', 'openai-codex', 'opencode', 'custom']
+        if (!validTypes.includes(type as CloudAgentType)) {
+            throw new Error(`Invalid agent type: ${type}. Must be one of: ${validTypes.join(', ')}`)
+        }
+        return cloudAgentManager.registerAgent(type as CloudAgentType, config as any)
+    })
+
+    ipcMain.handle('agents:update', (_e, id: string, updates: Record<string, unknown>) => {
+        if (typeof id !== 'string') throw new Error('Agent ID must be a string')
+        return cloudAgentManager.updateAgent(id, updates as any)
+    })
+
+    ipcMain.handle('agents:remove', async (_e, id: string) => {
+        if (typeof id !== 'string') throw new Error('Agent ID must be a string')
+        await cloudAgentManager.disconnectAgent(id)
+        return cloudAgentManager.removeAgent(id)
+    })
+
+    ipcMain.handle('agents:connect', async (_e, id: string) => {
+        if (typeof id !== 'string') throw new Error('Agent ID must be a string')
+        await cloudAgentManager.connectAgent(id)
+    })
+
+    ipcMain.handle('agents:disconnect', async (_e, id: string) => {
+        if (typeof id !== 'string') throw new Error('Agent ID must be a string')
+        await cloudAgentManager.disconnectAgent(id)
+    })
+
+    ipcMain.handle('agents:callTool', async (_e, agentId: string, toolName: string, args: Record<string, unknown>) => {
+        if (typeof agentId !== 'string') throw new Error('Agent ID must be a string')
+        if (typeof toolName !== 'string') throw new Error('Tool name must be a string')
+        return cloudAgentManager.callAgentTool(agentId, toolName, args || {})
+    })
+
+    ipcMain.handle('agents:getTools', (_e, agentId: string) => {
+        if (typeof agentId !== 'string') throw new Error('Agent ID must be a string')
+        return cloudAgentManager.getAgentTools(agentId)
+    })
+
+    ipcMain.handle('agents:createToken', (_e, agentId: string, name: string, permissions?: string[], expiresAt?: string) => {
+        if (typeof agentId !== 'string') throw new Error('Agent ID must be a string')
+        return cloudAgentManager.createAgentToken(agentId, name || 'Token', permissions as AgentPermission[], expiresAt)
+    })
+
+    ipcMain.handle('agents:getTokens', (_e, agentId: string) => {
+        if (typeof agentId !== 'string') throw new Error('Agent ID must be a string')
+        return cloudAgentManager.getAgentTokens(agentId)
+    })
+
+    ipcMain.handle('agents:revokeToken', (_e, agentId: string, tokenId: string) => {
+        if (typeof agentId !== 'string') throw new Error('Agent ID must be a string')
+        if (typeof tokenId !== 'string') throw new Error('Token ID must be a string')
+        return cloudAgentManager.revokeToken(agentId, tokenId)
+    })
+
+    // ── Knowledge Base ───────────────────────────────────────────────
+    ipcMain.handle('kb:graph', () => {
+        return kb.buildKnowledgeGraph()
+    })
+
+    ipcMain.handle('kb:export', () => {
+        return kb.exportVault()
+    })
+
+    ipcMain.handle('kb:search', (_e, query: string, maxChunks?: number) => {
+        if (typeof query !== 'string') throw new Error('Query must be a string')
+        return kb.searchContextChunks(query, maxChunks || 10)
+    })
+
+    ipcMain.handle('kb:context', (_e, maxNotes?: number) => {
+        return kb.formatVaultAsContext(maxNotes || 50)
+    })
+
+    ipcMain.handle('kb:noteConnections', (_e, noteId: string) => {
+        if (typeof noteId !== 'string') throw new Error('Note ID must be a string')
+        const note = db.getNote(noteId) as any
+        if (!note) throw new Error(`Note not found: ${noteId}`)
+
+        const graph = kb.buildKnowledgeGraph()
+        const node = graph.nodes.find(n => n.id === noteId)
+        const tags = db.getTagsForNote(noteId) as any[]
+
+        const relatedEdges = graph.edges.filter(
+            e => e.source === noteId || e.target === noteId
+        )
+
+        return {
+            note: { id: note.id, title: note.title },
+            tags: tags.map((t: any) => t.name),
+            outgoingLinks: node?.outgoingLinks || [],
+            incomingLinks: node?.incomingLinks || [],
+            linkCount: node?.linkCount || 0,
+            edges: relatedEdges
+        }
     })
 }

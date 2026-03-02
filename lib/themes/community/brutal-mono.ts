@@ -1,0 +1,47 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.brutal-mono",
+    name: "Brutal Mono",
+    author: "Tesserin Community",
+    description: "Black-and-white brutalism — flat surfaces, hard shadows, zero decoration.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#FFFFFF", "#000000", "#000000"],
+    category: "brutalism",
+    downloads: 8900,
+    rating: 4.5,
+    colors: {
+      "--bg-app": "#FFFFFF",
+      "--bg-panel": "#FFFFFF",
+      "--bg-panel-inset": "#F0F0F0",
+      "--text-primary": "#000000",
+      "--text-secondary": "#444444",
+      "--text-tertiary": "#888888",
+      "--text-on-accent": "#FFFFFF",
+      "--accent-primary": "#000000",
+      "--accent-pressed": "#333333",
+      "--border-light": "#000000",
+      "--border-dark": "#000000",
+      "--panel-outer-shadow": "5px 5px 0px #000000",
+      "--btn-shadow": "3px 3px 0px #000000",
+      "--input-inner-shadow": "inset 2px 2px 0px rgba(0,0,0,0.15)",
+      "--graph-node": "#000000",
+      "--graph-link": "#CCCCCC",
+      "--code-bg": "#F5F5F5",
+      "--tooltip-bg": "#000000",
+      "--tooltip-text": "#FFFFFF",
+      "--tooltip-border": "#000000",
+    },
+    styles: {
+      "--radius-panel": "0px",
+      "--radius-btn": "0px",
+      "--radius-inset": "0px",
+      "--border-width": "3px",
+      "--btn-hover-lift": "0px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "0px",
+    },
+  }
+
+export default theme

@@ -37,7 +37,9 @@ exports.registerIpcHandlers = registerIpcHandlers;
 const electron_1 = require("electron");
 const db = __importStar(require("./database"));
 const ai = __importStar(require("./ai-service"));
+const kb = __importStar(require("./knowledge-base"));
 const mcp_client_1 = require("./mcp-client");
+const cloud_agents_1 = require("./cloud-agents");
 const api_server_1 = require("./api-server");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -452,6 +454,104 @@ function registerIpcHandlers() {
             return pptLib.generateAndSavePptx(specOrMarkdown, safePath);
         }
         throw new Error('Invalid spec: expected a DeckSpec object or markdown string');
+    });
+    // ── Cloud Agents ─────────────────────────────────────────────────
+    electron_1.ipcMain.handle('agents:list', () => {
+        return cloud_agents_1.cloudAgentManager.listAgents();
+    });
+    electron_1.ipcMain.handle('agents:statuses', () => {
+        return cloud_agents_1.cloudAgentManager.getStatuses();
+    });
+    electron_1.ipcMain.handle('agents:register', (_e, type, config) => {
+        const validTypes = ['claude-code', 'gemini-cli', 'openai-codex', 'opencode', 'custom'];
+        if (!validTypes.includes(type)) {
+            throw new Error(`Invalid agent type: ${type}. Must be one of: ${validTypes.join(', ')}`);
+        }
+        return cloud_agents_1.cloudAgentManager.registerAgent(type, config);
+    });
+    electron_1.ipcMain.handle('agents:update', (_e, id, updates) => {
+        if (typeof id !== 'string')
+            throw new Error('Agent ID must be a string');
+        return cloud_agents_1.cloudAgentManager.updateAgent(id, updates);
+    });
+    electron_1.ipcMain.handle('agents:remove', async (_e, id) => {
+        if (typeof id !== 'string')
+            throw new Error('Agent ID must be a string');
+        await cloud_agents_1.cloudAgentManager.disconnectAgent(id);
+        return cloud_agents_1.cloudAgentManager.removeAgent(id);
+    });
+    electron_1.ipcMain.handle('agents:connect', async (_e, id) => {
+        if (typeof id !== 'string')
+            throw new Error('Agent ID must be a string');
+        await cloud_agents_1.cloudAgentManager.connectAgent(id);
+    });
+    electron_1.ipcMain.handle('agents:disconnect', async (_e, id) => {
+        if (typeof id !== 'string')
+            throw new Error('Agent ID must be a string');
+        await cloud_agents_1.cloudAgentManager.disconnectAgent(id);
+    });
+    electron_1.ipcMain.handle('agents:callTool', async (_e, agentId, toolName, args) => {
+        if (typeof agentId !== 'string')
+            throw new Error('Agent ID must be a string');
+        if (typeof toolName !== 'string')
+            throw new Error('Tool name must be a string');
+        return cloud_agents_1.cloudAgentManager.callAgentTool(agentId, toolName, args || {});
+    });
+    electron_1.ipcMain.handle('agents:getTools', (_e, agentId) => {
+        if (typeof agentId !== 'string')
+            throw new Error('Agent ID must be a string');
+        return cloud_agents_1.cloudAgentManager.getAgentTools(agentId);
+    });
+    electron_1.ipcMain.handle('agents:createToken', (_e, agentId, name, permissions, expiresAt) => {
+        if (typeof agentId !== 'string')
+            throw new Error('Agent ID must be a string');
+        return cloud_agents_1.cloudAgentManager.createAgentToken(agentId, name || 'Token', permissions, expiresAt);
+    });
+    electron_1.ipcMain.handle('agents:getTokens', (_e, agentId) => {
+        if (typeof agentId !== 'string')
+            throw new Error('Agent ID must be a string');
+        return cloud_agents_1.cloudAgentManager.getAgentTokens(agentId);
+    });
+    electron_1.ipcMain.handle('agents:revokeToken', (_e, agentId, tokenId) => {
+        if (typeof agentId !== 'string')
+            throw new Error('Agent ID must be a string');
+        if (typeof tokenId !== 'string')
+            throw new Error('Token ID must be a string');
+        return cloud_agents_1.cloudAgentManager.revokeToken(agentId, tokenId);
+    });
+    // ── Knowledge Base ───────────────────────────────────────────────
+    electron_1.ipcMain.handle('kb:graph', () => {
+        return kb.buildKnowledgeGraph();
+    });
+    electron_1.ipcMain.handle('kb:export', () => {
+        return kb.exportVault();
+    });
+    electron_1.ipcMain.handle('kb:search', (_e, query, maxChunks) => {
+        if (typeof query !== 'string')
+            throw new Error('Query must be a string');
+        return kb.searchContextChunks(query, maxChunks || 10);
+    });
+    electron_1.ipcMain.handle('kb:context', (_e, maxNotes) => {
+        return kb.formatVaultAsContext(maxNotes || 50);
+    });
+    electron_1.ipcMain.handle('kb:noteConnections', (_e, noteId) => {
+        if (typeof noteId !== 'string')
+            throw new Error('Note ID must be a string');
+        const note = db.getNote(noteId);
+        if (!note)
+            throw new Error(`Note not found: ${noteId}`);
+        const graph = kb.buildKnowledgeGraph();
+        const node = graph.nodes.find(n => n.id === noteId);
+        const tags = db.getTagsForNote(noteId);
+        const relatedEdges = graph.edges.filter(e => e.source === noteId || e.target === noteId);
+        return {
+            note: { id: note.id, title: note.title },
+            tags: tags.map((t) => t.name),
+            outgoingLinks: node?.outgoingLinks || [],
+            incomingLinks: node?.incomingLinks || [],
+            linkCount: node?.linkCount || 0,
+            edges: relatedEdges
+        };
     });
 }
 //# sourceMappingURL=ipc-handlers.js.map

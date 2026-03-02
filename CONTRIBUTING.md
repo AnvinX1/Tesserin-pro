@@ -1,5 +1,7 @@
 # Contributing to Tesserin
 
+> **Contributions are welcome!** Whether you're fixing a bug, proposing a feature, improving docs, or just sharing ideas — we're glad you're here. Every contribution, big or small, makes Tesserin better for everyone.
+
 Thank you for considering contributing to Tesserin! This guide will help you get started.
 
 ## 📋 Table of Contents

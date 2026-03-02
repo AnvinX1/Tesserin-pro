@@ -1,0 +1,46 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.clay-midnight",
+    name: "Clay Midnight",
+    author: "Tesserin Community",
+    description: "Dark claymorphism — soft rounded surfaces floating on deep navy with teal accents.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#0F1729", "#2DD4BF", "#CCFBF1"],
+    category: "clay",
+    downloads: 9600,
+    rating: 4.7,
+    colors: {
+      "--bg-app": "#0F1729",
+      "--bg-panel": "linear-gradient(145deg, #1A2540, #0F1729)",
+      "--bg-panel-inset": "#0A1020",
+      "--text-primary": "#CCFBF1",
+      "--text-secondary": "#5EEAD4",
+      "--text-tertiary": "#2D8074",
+      "--text-on-accent": "#0F1729",
+      "--accent-primary": "#2DD4BF",
+      "--accent-pressed": "#14B8A6",
+      "--border-light": "rgba(45, 212, 191, 0.08)",
+      "--border-dark": "rgba(0, 0, 0, 0.4)",
+      "--panel-outer-shadow": "8px 8px 24px rgba(0,0,0,0.4), -3px -3px 10px rgba(26,37,64,0.6), inset 0 1px 0 rgba(45,212,191,0.06)",
+      "--btn-shadow": "6px 6px 16px rgba(0,0,0,0.35), -3px -3px 10px rgba(26,37,64,0.5), inset 0 1px 0 rgba(45,212,191,0.04)",
+      "--input-inner-shadow": "inset 3px 3px 10px rgba(0,0,0,0.4), inset -2px -2px 6px rgba(26,37,64,0.4)",
+      "--graph-node": "#1A3A4A",
+      "--graph-link": "#133040",
+      "--code-bg": "#0A1020",
+      "--tooltip-bg": "#1A2540",
+      "--tooltip-text": "#CCFBF1",
+      "--tooltip-border": "rgba(45, 212, 191, 0.15)",
+    },
+    styles: {
+      "--radius-panel": "24px",
+      "--radius-btn": "18px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-3px",
+      "--btn-active-press": "1px",
+      "--scrollbar-radius": "12px",
+    },
+  }
+
+export default theme

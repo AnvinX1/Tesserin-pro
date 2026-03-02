@@ -1,0 +1,47 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.brutal-yellow",
+    name: "Brutal Yellow",
+    author: "Tesserin Community",
+    description: "Construction-zone brutalism — bold yellow and black with no soft edges.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#FFE500", "#000000", "#000000"],
+    category: "brutalism",
+    downloads: 7500,
+    rating: 4.4,
+    colors: {
+      "--bg-app": "#FFE500",
+      "--bg-panel": "#FFE500",
+      "--bg-panel-inset": "#E6CE00",
+      "--text-primary": "#000000",
+      "--text-secondary": "#333300",
+      "--text-tertiary": "#666633",
+      "--text-on-accent": "#FFE500",
+      "--accent-primary": "#000000",
+      "--accent-pressed": "#333333",
+      "--border-light": "#000000",
+      "--border-dark": "#000000",
+      "--panel-outer-shadow": "5px 5px 0px #000000",
+      "--btn-shadow": "3px 3px 0px #000000",
+      "--input-inner-shadow": "inset 2px 2px 0px rgba(0,0,0,0.1)",
+      "--graph-node": "#000000",
+      "--graph-link": "#999900",
+      "--code-bg": "#E6CE00",
+      "--tooltip-bg": "#000000",
+      "--tooltip-text": "#FFE500",
+      "--tooltip-border": "#000000",
+    },
+    styles: {
+      "--radius-panel": "0px",
+      "--radius-btn": "0px",
+      "--radius-inset": "0px",
+      "--border-width": "3px",
+      "--btn-hover-lift": "0px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "0px",
+    },
+  }
+
+export default theme

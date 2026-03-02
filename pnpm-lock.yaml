@@ -23,6 +23,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      '@lordicon/react':
+        specifier: ^1.11.0
+        version: 1.11.0(lottie-web@5.13.0)(react@19.2.4)
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
         version: 1.26.0(zod@3.25.76)
@@ -137,6 +140,9 @@ importers:
       input-otp:
         specifier: 1.4.2
         version: 1.4.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      lottie-web:
+        specifier: ^5.13.0
+        version: 5.13.0
       mermaid:
         specifier: ^11.12.2
         version: 11.12.2
@@ -691,6 +697,24 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@lordicon/helpers@1.11.0':
+    resolution: {integrity: sha512-ambh76d15jAdGaKYXBCjR9AlTJUB6aGx4H8vlradyfT37GbLlwiG+HfC8MTq9RTM08pBHRKFPWnWOxa34NUIAw==}
+
+  '@lordicon/react@1.11.0':
+    resolution: {integrity: sha512-DAxjxr0aSHfdTWxCzeQMf5rnr/rpN0qjnLC9fAePgF0GXOXZpvsVDddi1wfgTYWTWM6iRFc5dDOC7twP24nf3g==}
+    peerDependencies:
+      lottie-react-native: '*'
+      lottie-web: '*'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      lottie-react-native:
+        optional: true
+      lottie-web:
+        optional: true
+      react-native:
+        optional: true
 
   '@malept/cross-spawn-promise@2.0.0':
     resolution: {integrity: sha512-1DpKU0Z5ThltBwjNySMC14g0CkbyhCaz9FkhxqNsZI6uAPJXFS8cMXlBKo26FJ8ZuW6S9GCMcR9IO5k2X5/9Fg==}
@@ -3678,6 +3702,9 @@ packages:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
 
+  lottie-web@5.13.0:
+    resolution: {integrity: sha512-+gfBXl6sxXMPe8tKQm7qzLnUy5DUPJPKIyRHwtpCpyUEYjHYRJC/5gjUvdkuO2c3JllrPtHXH5UJJK8LRYl5yQ==}
+
   lowercase-keys@2.0.0:
     resolution: {integrity: sha512-tqNXrS78oMOE73NMxK4EMLQsQowWf8jKooH9g7xPavRT706R6bkQJ6DY2Te7QukaZsulxa30wQ7bk0pm4XiHmA==}
     engines: {node: '>=8'}
@@ -5502,6 +5529,15 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@lordicon/helpers@1.11.0': {}
+
+  '@lordicon/react@1.11.0(lottie-web@5.13.0)(react@19.2.4)':
+    dependencies:
+      '@lordicon/helpers': 1.11.0
+      react: 19.2.4
+    optionalDependencies:
+      lottie-web: 5.13.0
 
   '@malept/cross-spawn-promise@2.0.0':
     dependencies:
@@ -8692,6 +8728,8 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+
+  lottie-web@5.13.0: {}
 
   lowercase-keys@2.0.0: {}
 

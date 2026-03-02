@@ -1,0 +1,45 @@
+# Tesserin Docker MCP Server
+#
+# This Dockerfile packages Tesserin as an MCP server for the Docker MCP Toolkit.
+# External AI agents (Claude Code, Gemini CLI, Codex, OpenCode) can connect
+# to this container via Docker MCP to use Tesserin's vault as their knowledge base.
+#
+# Build:   docker build -t tesserin-mcp -f Dockerfile.mcp .
+# Run:     docker run --rm -i tesserin-mcp
+#
+# For Docker MCP Toolkit, add to your MCP profile:
+#   docker mcp profile add tesserin tesserin-mcp
+
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+
+# Copy source
+COPY electron/ ./electron/
+COPY lib/ ./lib/
+COPY tsconfig.json ./
+
+# Build the MCP server (electron main process only)
+RUN npx tsc -p electron/tsconfig.json || true
+
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy built files and production dependencies
+COPY --from=builder /app/dist-electron ./dist-electron
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json ./
+
+# Create data directory for SQLite
+RUN mkdir -p /data
+
+ENV NODE_ENV=production
+ENV TESSERIN_DATA_DIR=/data
+
+# MCP server runs on stdio
+ENTRYPOINT ["node", "dist-electron/main.js", "--mcp"]

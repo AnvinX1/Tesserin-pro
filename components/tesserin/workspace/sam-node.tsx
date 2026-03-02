@@ -32,6 +32,10 @@ import {
   FiArrowDownCircle,
   FiSearch,
   FiHash,
+  FiGlobe,
+  FiServer,
+  FiDatabase,
+  FiGitBranch,
 } from "react-icons/fi"
 import {
   HiOutlineSparkles,
@@ -94,12 +98,24 @@ CAPABILITIES
 - **Rewrite** — improve or rewrite selected note content
 - **Ask Vault** — answer questions using relevant notes from the vault (RAG). When vault context is provided below, cite the note titles in your answer using [[Note Title]] wiki-links.
 - **Smart Search** — find and relate notes across the vault on a topic
+- **Knowledge Graph** — analyze the vault's knowledge graph structure, identify clusters, orphan notes, and connection opportunities
+- **Cloud Agents** — coordinate with connected cloud AI agents (Claude Code, Gemini CLI, Codex, etc.) via MCP for enhanced capabilities
 
 When vault context is provided under RELEVANT VAULT CONTEXT, use it to ground your answers. Cite specific notes with [[Title]] links. If the vault context doesn't contain enough information, say so honestly rather than hallucinating.
 
 When summarizing, give only the summary — no "Here is the summary:" prefix.
 When suggesting tags, return a bulleted list with one-line explanations.
 When suggesting links, explain each connection briefly.
+
+KNOWLEDGE GRAPH AWARENESS
+You have access to the vault's knowledge graph — a network of notes connected by [[wiki-links]] and shared tags. When asked about the graph:
+- Identify highly-connected hub notes
+- Find orphan notes that should be linked
+- Suggest structural improvements
+- Analyze knowledge clusters and gaps
+
+CLOUD AGENT COORDINATION
+When cloud agents are connected, you can delegate tasks to them or use them as additional AI capabilities. The user's notes and knowledge graph serve as a shared context that any connected agent can access through MCP tools.
 
 Keep responses focused and concise unless the user asks for detail.`
 
@@ -266,6 +282,20 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: "Find and relate notes on a topic",
     requiresNote: false,
   },
+  {
+    id: "graph-analysis",
+    label: "Graph",
+    icon: <FiGitBranch size={13} />,
+    description: "Analyze knowledge graph structure",
+    requiresNote: false,
+  },
+  {
+    id: "cloud-delegate",
+    label: "Agents",
+    icon: <FiGlobe size={13} />,
+    description: "Delegate to connected cloud agents",
+    requiresNote: false,
+  },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -342,6 +372,7 @@ export function SAMNode() {
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const [showSidebar, setShowSidebar] = useState(true)
+  const [connectedAgents, setConnectedAgents] = useState<Array<{ agentId: string; agentName: string; status: string; toolCount: number }>>([])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -356,6 +387,7 @@ export function SAMNode() {
   /* ---- Ollama connection ---- */
   useEffect(() => {
     checkConnection()
+    loadAgentStatuses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -398,6 +430,22 @@ export function SAMNode() {
       setIsConnected(false)
     }
   }, [selectedModel])
+
+  const loadAgentStatuses = useCallback(async () => {
+    if (typeof window !== "undefined" && window.tesserin?.agents) {
+      try {
+        const statuses = await window.tesserin.agents.statuses()
+        setConnectedAgents(
+          (statuses || []).filter((s: any) => s.status === "connected").map((s: any) => ({
+            agentId: s.agentId,
+            agentName: s.agentName,
+            status: s.status,
+            toolCount: s.toolCount || 0,
+          }))
+        )
+      } catch { /* not in Electron */ }
+    }
+  }, [])
 
   /* ---- Auto-scroll ---- */
   useEffect(() => {
@@ -598,6 +646,11 @@ export function SAMNode() {
         systemPrompt += `\n\nVAULT (${notes.length} notes): ${notes.slice(0, 60).map((n) => n.title).join(", ")}`
       }
 
+      // Cloud agent context
+      if (connectedAgents.length > 0) {
+        systemPrompt += `\n\nCONNECTED CLOUD AGENTS (${connectedAgents.length}):\n${connectedAgents.map((a) => `- ${a.agentName} (${a.toolCount} tools available)`).join("\n")}`
+      }
+
       // Vault RAG — search for relevant notes based on the user's query
       const vaultContext = searchVaultContext(notes, trimmed, 5, 600)
       if (vaultContext) {
@@ -729,7 +782,7 @@ export function SAMNode() {
         abortRef.current = null
       }
     },
-    [activeConvoId, createConversation, conversations, isLoading, isConnected, selectedModel, selectedNote, notes, updateConvoMessages],
+    [activeConvoId, createConversation, conversations, isLoading, isConnected, selectedModel, selectedNote, notes, updateConvoMessages, connectedAgents],
   )
 
   /* ---- Quick action handlers ---- */
@@ -768,9 +821,19 @@ export function SAMNode() {
         case "smart-search":
           sendMessage("Search across my vault for notes related to a topic. Ask me the topic and then show which notes are relevant, how they connect, and what gaps exist in my knowledge.")
           break
+        case "graph-analysis":
+          sendMessage("Analyze my vault's knowledge graph. Identify the most connected hub notes, find orphan notes that need links, identify clusters of related topics, and suggest structural improvements to strengthen my knowledge network.")
+          break
+        case "cloud-delegate":
+          if (connectedAgents.length > 0) {
+            sendMessage(`I have ${connectedAgents.length} cloud agent(s) connected: ${connectedAgents.map((a) => a.agentName).join(", ")}. What task should I delegate to them? They have access to my vault through MCP.`)
+          } else {
+            sendMessage("Show me how to connect cloud AI agents (like Claude Code, Gemini CLI, or Codex) to my Tesserin vault using Docker MCP. Explain the setup process and what capabilities they'll gain.")
+          }
+          break
       }
     },
-    [selectedNote, sendMessage],
+    [selectedNote, sendMessage, connectedAgents],
   )
 
   /* ---- Keyboard ---- */
@@ -850,6 +913,23 @@ export function SAMNode() {
                 </div>
               )}
             </div>
+
+            {/* Connected agents indicator */}
+            {connectedAgents.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {connectedAgents.map((agent) => (
+                  <div
+                    key={agent.agentId}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-medium"
+                    style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.2)" }}
+                    title={`${agent.agentName}: ${agent.toolCount} tools`}
+                  >
+                    <FiGlobe size={7} />
+                    {agent.agentName}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* New conversation */}
@@ -1001,7 +1081,7 @@ export function SAMNode() {
                 Start Conversation
               </button>
               <div className="mt-6 text-[9px] font-mono" style={{ color: "var(--text-tertiary)", opacity: 0.5 }}>
-                Powered by Ollama · Open-source local AI
+                Powered by Ollama + Cloud Agents · MCP-native · Knowledge Graph
               </div>
             </div>
           ) : (

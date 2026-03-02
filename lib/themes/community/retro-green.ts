@@ -1,0 +1,48 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.retro-green",
+    name: "Retro Phosphor",
+    author: "Tesserin Community",
+    description: "Classic green-screen terminal — the original hacker aesthetic from the 80s.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#001100", "#33FF33", "#88FF88"],
+    category: "retro",
+    downloads: 9700,
+    rating: 4.6,
+    colors: {
+      "--bg-app": "#001100",
+      "--bg-panel": "linear-gradient(145deg, #002200, #001100)",
+      "--bg-panel-inset": "#000A00",
+      "--text-primary": "#88FF88",
+      "--text-secondary": "#44CC44",
+      "--text-tertiary": "#228822",
+      "--text-on-accent": "#001100",
+      "--accent-primary": "#33FF33",
+      "--accent-pressed": "#22CC22",
+      "--border-light": "rgba(51, 255, 51, 0.08)",
+      "--border-dark": "rgba(0, 0, 0, 0.6)",
+      "--panel-outer-shadow": "5px 5px 15px rgba(0,0,0,0.5), -1px -1px 4px #003300",
+      "--btn-shadow": "4px 4px 8px rgba(0,0,0,0.5), -1px -1px 3px #003300",
+      "--input-inner-shadow": "inset 2px 2px 5px rgba(0,0,0,0.5), inset -1px -1px 2px #002200",
+      "--graph-node": "#33FF33",
+      "--graph-link": "#003300",
+      "--code-bg": "#000A00",
+      "--tooltip-bg": "#002200",
+      "--tooltip-text": "#88FF88",
+      "--tooltip-border": "rgba(51, 255, 51, 0.12)",
+    },
+    styles: {
+      "--radius-panel": "4px",
+      "--radius-btn": "3px",
+      "--radius-inset": "3px",
+      "--border-width": "2px",
+      "--btn-hover-lift": "-1px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "2px",
+      "--accent-glow": "0 0 8px rgba(51, 255, 51, 0.3)",
+    },
+  }
+
+export default theme

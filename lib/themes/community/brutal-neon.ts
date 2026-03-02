@@ -1,0 +1,47 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.brutal-neon",
+    name: "Brutal Neon",
+    author: "Tesserin Community",
+    description: "Neon green on black — terminal-inspired brutalism with raw hacker energy.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#0A0A0A", "#00FF41", "#00FF41"],
+    category: "brutalism",
+    downloads: 10100,
+    rating: 4.6,
+    colors: {
+      "--bg-app": "#0A0A0A",
+      "--bg-panel": "#0E0E0E",
+      "--bg-panel-inset": "#050505",
+      "--text-primary": "#00FF41",
+      "--text-secondary": "#00CC33",
+      "--text-tertiary": "#008822",
+      "--text-on-accent": "#000000",
+      "--accent-primary": "#00FF41",
+      "--accent-pressed": "#00CC33",
+      "--border-light": "rgba(0, 255, 65, 0.15)",
+      "--border-dark": "rgba(0, 255, 65, 0.3)",
+      "--panel-outer-shadow": "4px 4px 0px #00FF41",
+      "--btn-shadow": "3px 3px 0px #00FF41",
+      "--input-inner-shadow": "inset 2px 2px 0px rgba(0,0,0,0.8)",
+      "--graph-node": "#00FF41",
+      "--graph-link": "#003310",
+      "--code-bg": "#050505",
+      "--tooltip-bg": "#00FF41",
+      "--tooltip-text": "#000000",
+      "--tooltip-border": "#00FF41",
+    },
+    styles: {
+      "--radius-panel": "0px",
+      "--radius-btn": "0px",
+      "--radius-inset": "0px",
+      "--border-width": "3px",
+      "--btn-hover-lift": "0px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "0px",
+    },
+  }
+
+export default theme

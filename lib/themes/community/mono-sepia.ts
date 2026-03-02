@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.mono-sepia",
+    name: "Mono Sepia",
+    author: "Tesserin Community",
+    description: "Warm sepia monochrome — like aged paper under candlelight. Perfect for evening writing.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#F4ECD8", "#5B4636", "#3E2E1E"],
+    category: "monochrome",
+    downloads: 7200,
+    rating: 4.5,
+    colors: {
+      "--bg-app": "#F4ECD8",
+      "--bg-panel": "linear-gradient(145deg, #F4ECD8, #E8DFC8)",
+      "--bg-panel-inset": "#E0D5BE",
+      "--text-primary": "#3E2E1E",
+      "--text-secondary": "#6B5B4B",
+      "--text-tertiary": "#9A8B7A",
+      "--text-on-accent": "#F4ECD8",
+      "--accent-primary": "#5B4636",
+      "--accent-pressed": "#3E2E1E",
+      "--border-light": "rgba(255, 255, 255, 0.5)",
+      "--border-dark": "rgba(94, 70, 54, 0.08)",
+      "--panel-outer-shadow": "5px 5px 14px rgba(140,120,90,0.15), -4px -4px 12px rgba(255,255,255,0.6)",
+      "--btn-shadow": "3px 3px 8px rgba(140,120,90,0.12), -3px -3px 8px rgba(255,255,255,0.55)",
+      "--input-inner-shadow": "inset 2px 2px 6px rgba(140,120,90,0.12), inset -2px -2px 6px rgba(255,255,255,0.55)",
+      "--graph-node": "#D5CBB5",
+      "--graph-link": "#C5B99E",
+      "--code-bg": "#E8DFC8",
+      "--tooltip-bg": "#5B4636",
+      "--tooltip-text": "#F4ECD8",
+      "--tooltip-border": "rgba(255, 255, 255, 0.1)",
+    },
+    styles: {
+      "--radius-panel": "12px",
+      "--radius-btn": "8px",
+      "--radius-inset": "8px",
+      "--btn-hover-lift": "-1px",
+      "--scrollbar-radius": "6px",
+    },
+  }
+
+export default theme

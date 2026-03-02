@@ -1,379 +1,58 @@
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
-import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText } from "react-icons/fi"
+import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiClock } from "react-icons/fi"
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
 import { renderMarkdown } from "@/lib/markdown-renderer"
 import { SkeuoBadge } from "../core/skeuo-badge"
 
 /* ------------------------------------------------------------------ */
-/*  Markdown renderer (legacy wrapper — uses shared renderer)           */
+/*  Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-function renderMarkdownLocal(
-  markdown: string,
-  existingTitles: Set<string>,
-  onLinkClick: (title: string) => void,
-): React.ReactNode {
-  const lines = markdown.split("\n")
-  const elements: React.ReactNode[] = []
-  let i = 0
-  let key = 0
-
-  /** Parse inline formatting within a single line */
-  function parseInline(text: string): React.ReactNode[] {
-    const parts: React.ReactNode[] = []
-    let remaining = text
-    let inlineKey = 0
-
-    while (remaining.length > 0) {
-      // Wiki link
-      const wikiMatch = remaining.match(/^\[\[([^\]]+)\]\]/)
-      if (wikiMatch) {
-        const title = wikiMatch[1].trim()
-        const exists = existingTitles.has(title.toLowerCase())
-        parts.push(
-          <button
-            key={`wiki-${inlineKey++}`}
-            onClick={(e) => {
-              e.preventDefault()
-              onLinkClick(title)
-            }}
-            className="inline font-semibold cursor-pointer transition-colors duration-150"
-            style={{
-              color: "var(--accent-primary)",
-              textDecoration: "underline",
-              textDecorationStyle: exists ? "solid" : ("dashed" as any),
-              textDecorationColor: "var(--accent-primary)",
-              textUnderlineOffset: "3px",
-              background: "none",
-              border: "none",
-              padding: 0,
-              font: "inherit",
-            }}
-            title={exists ? `Open "${title}"` : `Create "${title}"`}
-          >
-            {title}
-          </button>,
-        )
-        remaining = remaining.slice(wikiMatch[0].length)
-        continue
-      }
-
-      // Inline code
-      const codeMatch = remaining.match(/^`([^`]+)`/)
-      if (codeMatch) {
-        parts.push(
-          <code
-            key={`code-${inlineKey++}`}
-            className="px-1.5 py-0.5 rounded text-sm font-mono"
-            style={{
-              backgroundColor: "var(--code-bg)",
-              color: "var(--accent-primary)",
-              border: "1px solid var(--border-dark)",
-            }}
-          >
-            {codeMatch[1]}
-          </code>,
-        )
-        remaining = remaining.slice(codeMatch[0].length)
-        continue
-      }
-
-      // Bold
-      const boldMatch = remaining.match(/^\*\*(.+?)\*\*/)
-      if (boldMatch) {
-        parts.push(
-          <strong key={`b-${inlineKey++}`} style={{ color: "var(--text-primary)" }}>
-            {boldMatch[1]}
-          </strong>,
-        )
-        remaining = remaining.slice(boldMatch[0].length)
-        continue
-      }
-
-      // Italic
-      const italicMatch = remaining.match(/^\*(.+?)\*/)
-      if (italicMatch) {
-        parts.push(<em key={`i-${inlineKey++}`}>{italicMatch[1]}</em>)
-        remaining = remaining.slice(italicMatch[0].length)
-        continue
-      }
-
-      // Strikethrough
-      const strikeMatch = remaining.match(/^~~(.+?)~~/)
-      if (strikeMatch) {
-        parts.push(
-          <del key={`s-${inlineKey++}`} style={{ opacity: 0.6 }}>
-            {strikeMatch[1]}
-          </del>,
-        )
-        remaining = remaining.slice(strikeMatch[0].length)
-        continue
-      }
-
-      // Normal character
-      parts.push(remaining[0])
-      remaining = remaining.slice(1)
-    }
-
-    return parts
-  }
-
-  while (i < lines.length) {
-    const line = lines[i]
-
-    // Fenced code block
-    if (line.startsWith("```")) {
-      const lang = line.slice(3).trim()
-      const codeLines: string[] = []
-      i++
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i])
-        i++
-      }
-      i++ // skip closing ```
-      elements.push(
-        <div key={key++} className="my-3 rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-dark)" }}>
-          {lang && (
-            <div
-              className="px-4 py-1.5 text-xs font-mono uppercase tracking-wider border-b"
-              style={{
-                backgroundColor: "var(--bg-panel-inset)",
-                borderColor: "var(--border-dark)",
-                color: "var(--text-tertiary)",
-              }}
-            >
-              {lang}
-            </div>
-          )}
-          <pre
-            className="p-4 overflow-x-auto text-sm font-mono leading-relaxed custom-scrollbar"
-            style={{ backgroundColor: "var(--code-bg)", color: "var(--text-primary)" }}
-          >
-            <code>{codeLines.join("\n")}</code>
-          </pre>
-        </div>,
-      )
-      continue
-    }
-
-    // Horizontal rule
-    if (/^(-{3,}|_{3,}|\*{3,})$/.test(line.trim())) {
-      elements.push(
-        <hr
-          key={key++}
-          className="my-6"
-          style={{ borderColor: "var(--border-dark)", opacity: 0.3 }}
-        />,
-      )
-      i++
-      continue
-    }
-
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)/)
-    if (headingMatch) {
-      const level = headingMatch[1].length
-      const text = headingMatch[2]
-      const sizes: Record<number, string> = {
-        1: "text-3xl font-bold mt-6 mb-3",
-        2: "text-2xl font-bold mt-5 mb-2",
-        3: "text-xl font-semibold mt-4 mb-2",
-        4: "text-lg font-semibold mt-3 mb-1",
-        5: "text-base font-semibold mt-2 mb-1",
-        6: "text-sm font-semibold mt-2 mb-1 uppercase tracking-wider",
-      }
-      const Tag = `h${level}` as React.ElementType
-      elements.push(
-        <Tag
-          key={key++}
-          className={`${sizes[level]} leading-tight`}
-          style={{ color: "var(--text-primary)" }}
-        >
-          {parseInline(text)}
-        </Tag>,
-      )
-      i++
-      continue
-    }
-
-    // Blockquote
-    if (line.startsWith("> ")) {
-      const quoteLines: string[] = []
-      while (i < lines.length && lines[i].startsWith("> ")) {
-        quoteLines.push(lines[i].slice(2))
-        i++
-      }
-      elements.push(
-        <blockquote
-          key={key++}
-          className="my-3 pl-4 py-2 italic leading-relaxed"
-          style={{
-            borderLeft: "3px solid var(--accent-primary)",
-            color: "var(--text-secondary)",
-            backgroundColor: "var(--bg-panel-inset)",
-            borderRadius: "0 8px 8px 0",
-          }}
-        >
-          {quoteLines.map((ql, qi) => (
-            <span key={qi}>
-              {parseInline(ql)}
-              {qi < quoteLines.length - 1 && <br />}
-            </span>
-          ))}
-        </blockquote>,
-      )
-      continue
-    }
-
-    // Table (GFM)
-    if (line.includes("|") && i + 1 < lines.length && /^\|?\s*[-:]+/.test(lines[i + 1])) {
-      const headerCells = line
-        .split("|")
-        .map((c) => c.trim())
-        .filter(Boolean)
-      i++ // skip separator
-      i++
-      const rows: string[][] = []
-      while (i < lines.length && lines[i].includes("|")) {
-        rows.push(
-          lines[i]
-            .split("|")
-            .map((c) => c.trim())
-            .filter(Boolean),
-        )
-        i++
-      }
-      elements.push(
-        <div key={key++} className="my-3 overflow-x-auto rounded-xl" style={{ border: "1px solid var(--border-dark)" }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ backgroundColor: "var(--bg-panel-inset)" }}>
-                {headerCells.map((cell, ci) => (
-                  <th
-                    key={ci}
-                    className="px-4 py-2 text-left font-semibold border-b"
-                    style={{ borderColor: "var(--border-dark)", color: "var(--text-primary)" }}
-                  >
-                    {parseInline(cell)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, ri) => (
-                <tr key={ri} style={{ borderBottom: "1px solid var(--border-dark)" }}>
-                  {row.map((cell, ci) => (
-                    <td
-                      key={ci}
-                      className="px-4 py-2"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      {parseInline(cell)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>,
-      )
-      continue
-    }
-
-    // Unordered list
-    if (/^[-*]\s/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
-        items.push(lines[i].replace(/^[-*]\s/, ""))
-        i++
-      }
-      elements.push(
-        <ul key={key++} className="my-2 ml-6 list-disc" style={{ color: "var(--text-secondary)" }}>
-          {items.map((item, ii) => (
-            <li key={ii} className="py-0.5 leading-relaxed">
-              {parseInline(item)}
-            </li>
-          ))}
-        </ul>,
-      )
-      continue
-    }
-
-    // Ordered list
-    if (/^\d+\.\s/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        items.push(lines[i].replace(/^\d+\.\s/, ""))
-        i++
-      }
-      elements.push(
-        <ol key={key++} className="my-2 ml-6 list-decimal" style={{ color: "var(--text-secondary)" }}>
-          {items.map((item, ii) => (
-            <li key={ii} className="py-0.5 leading-relaxed">
-              {parseInline(item)}
-            </li>
-          ))}
-        </ol>,
-      )
-      continue
-    }
-
-    // Empty line
-    if (line.trim() === "") {
-      elements.push(<div key={key++} className="h-3" />)
-      i++
-      continue
-    }
-
-    // Paragraph
-    elements.push(
-      <p
-        key={key++}
-        className="my-1.5 leading-relaxed"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        {parseInline(line)}
-      </p>,
-    )
-    i++
-  }
-
-  return elements
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString()
 }
-
-/* Overload: prefer the new shared renderer when the local wrapper is
-   not needed for backwards compatibility. The markdown-editor preview
-   pane still calls the 3-arg local function. */
-void renderMarkdownLocal // keep TS from complaining about unused
 
 /* ------------------------------------------------------------------ */
 /*  MarkdownEditor Component                                            */
 /* ------------------------------------------------------------------ */
 
+interface MarkdownEditorProps {
+  /** Override note selection (for universal split pane secondary) */
+  noteId?: string | null
+  /** Custom note-select callback (for secondary pane) */
+  onSelectNote?: (id: string) => void
+  /** Whether this editor is in a secondary pane */
+  isSecondary?: boolean
+}
+
 /**
  * MarkdownEditor
  *
- * A Notion-style split-pane markdown editor with full wiki-link support.
- * Provides:
+ * A premium markdown editor with full wiki-link support.
+ * Supports independent note selection for universal split panes.
  *
- * - **Edit mode**: Raw markdown textarea with syntax highlighting hints
+ * - **Edit mode**: Raw markdown textarea
  * - **Preview mode**: Rendered markdown with interactive wiki-links
  * - **Split mode**: Side-by-side edit + preview
  * - **Note switcher**: Dropdown to switch between notes
  * - **Note management**: Create, delete, rename notes
  * - **Backlink count**: Shows number of incoming links
+ * - **Word count**: Live word, character, and reading time display
  *
  * Wiki-links (`[[Note Title]]`) are rendered as clickable accent-colored
  * links. Clicking navigates to (or creates) the target note.
- *
- * @example
- * ```tsx
- * <MarkdownEditor />
- * ```
  */
-export function MarkdownEditor() {
+export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary }: MarkdownEditorProps = {}) {
   const {
     notes,
     selectedNoteId,
@@ -385,14 +64,18 @@ export function MarkdownEditor() {
     graph,
   } = useNotes()
 
+  // Use prop noteId if explicitly provided (secondary pane), otherwise global
+  const effectiveNoteId = propsNoteId !== undefined ? propsNoteId : selectedNoteId
+  const effectiveSelectNote = onSelectNote || selectNote
+
   const [viewMode, setViewMode] = useState<"edit" | "preview" | "split">("split")
   const [showNoteList, setShowNoteList] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const selectedNote = useMemo(
-    () => notes.find((n) => n.id === selectedNoteId) ?? null,
-    [notes, selectedNoteId],
+    () => notes.find((n) => n.id === effectiveNoteId) ?? null,
+    [notes, effectiveNoteId],
   )
 
   /** Set of existing titles (lower-cased) for wiki-link styling */
@@ -412,6 +95,14 @@ export function MarkdownEditor() {
       )
     })
   }, [notes, selectedNote])
+
+  /** Word count, character count, reading time */
+  const stats = useMemo(() => {
+    if (!selectedNote) return { words: 0, chars: 0, readMin: 0 }
+    const text = selectedNote.content.trim()
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0
+    return { words, chars: text.length, readMin: Math.max(1, Math.ceil(words / 200)) }
+  }, [selectedNote])
 
   /** Close dropdown on outside click */
   useEffect(() => {
@@ -443,7 +134,7 @@ export function MarkdownEditor() {
   )
 
   const handleDelete = useCallback(() => {
-    if (selectedNote) {
+    if (selectedNote && window.confirm(`Delete "${selectedNote.title}"? This cannot be undone.`)) {
       deleteNote(selectedNote.id)
     }
   }, [selectedNote, deleteNote])
@@ -454,12 +145,12 @@ export function MarkdownEditor() {
       <div className="flex flex-col h-full">
         {/* Header */}
         <div
-          className="h-14 border-b flex items-center px-6 justify-between shrink-0"
+          className="h-12 border-b flex items-center px-6 justify-between shrink-0"
           style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
         >
           <div className="flex items-center gap-3">
-            <FiFileText size={18} style={{ color: "var(--text-secondary)" }} />
-            <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
+            <FiFileText size={16} style={{ color: "var(--text-tertiary)" }} />
+            <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: "var(--text-tertiary)" }}>
               Notes
             </span>
           </div>
@@ -467,30 +158,31 @@ export function MarkdownEditor() {
             onClick={() => addNote()}
             className="skeuo-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
           >
-            <FiPlus size={14} />
+            <FiPlus size={13} />
             New Note
           </button>
         </div>
 
         {/* Empty state */}
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+          <div className="text-center max-w-xs">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 skeuo-inset"
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 skeuo-inset"
+              style={{ opacity: 0.7 }}
             >
-              <FiFileText size={28} style={{ color: "var(--text-tertiary)" }} />
+              <FiFileText size={32} style={{ color: "var(--text-tertiary)" }} />
             </div>
-            <p className="text-lg font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+            <p className="text-xl font-bold mb-2 tracking-tight" style={{ color: "var(--text-primary)" }}>
               No note selected
             </p>
-            <p className="text-sm mb-4" style={{ color: "var(--text-tertiary)" }}>
-              Pick a note from the sidebar or graph, or create a new one.
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-tertiary)" }}>
+              Pick a note from the sidebar or graph, or start fresh with a new one.
             </p>
             <button
               onClick={() => addNote()}
-              className="skeuo-btn px-4 py-2 rounded-xl text-sm font-semibold"
+              className="skeuo-btn px-5 py-2.5 rounded-xl text-sm font-semibold"
             >
-              <FiPlus size={14} className="inline mr-1" />
+              <FiPlus size={14} className="inline mr-1.5" />
               Create Note
             </button>
           </div>
@@ -504,7 +196,7 @@ export function MarkdownEditor() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div
-        className="h-14 border-b flex items-center px-4 gap-3 shrink-0"
+        className="h-12 border-b flex items-center px-4 gap-2 shrink-0"
         style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
       >
         {/* Note switcher */}
@@ -513,9 +205,9 @@ export function MarkdownEditor() {
             onClick={() => setShowNoteList(!showNoteList)}
             className="skeuo-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold max-w-[200px]"
           >
-            <FiFileText size={14} />
+            <FiFileText size={13} />
             <span className="truncate">{selectedNote.title}</span>
-            <FiChevronDown size={12} />
+            <FiChevronDown size={11} />
           </button>
 
           {showNoteList && (
@@ -527,27 +219,27 @@ export function MarkdownEditor() {
                 <button
                   key={n.id}
                   onClick={() => {
-                    selectNote(n.id)
+                    effectiveSelectNote(n.id)
                     setShowNoteList(false)
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors duration-150"
                   style={{
                     color:
-                      n.id === selectedNoteId
+                      n.id === effectiveNoteId
                         ? "var(--text-on-accent)"
                         : "var(--text-secondary)",
                     backgroundColor:
-                      n.id === selectedNoteId
+                      n.id === effectiveNoteId
                         ? "var(--accent-primary)"
                         : "transparent",
                   }}
                   onMouseEnter={(e) => {
-                    if (n.id !== selectedNoteId) {
+                    if (n.id !== effectiveNoteId) {
                       e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (n.id !== selectedNoteId) {
+                    if (n.id !== effectiveNoteId) {
                       e.currentTarget.style.backgroundColor = "transparent"
                     }
                   }}
@@ -567,70 +259,107 @@ export function MarkdownEditor() {
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Stats badge */}
+        <span
+          className="hidden sm:flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-md mr-1"
+          style={{ color: "var(--text-tertiary)", backgroundColor: "var(--bg-panel-inset)" }}
+        >
+          {stats.words} words · {stats.readMin} min read
+        </span>
+
+        {/* Last modified */}
+        {selectedNote.updatedAt && (
+          <span
+            className="hidden md:flex items-center gap-1 text-[10px] mr-1"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            <FiClock size={10} />
+            {relativeTime(selectedNote.updatedAt)}
+          </span>
+        )}
+
         {/* View mode toggles */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setViewMode("edit")}
-            className={`skeuo-btn w-8 h-8 flex items-center justify-center rounded-lg ${
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
               viewMode === "edit" ? "active" : ""
             }`}
             aria-label="Edit mode"
             aria-pressed={viewMode === "edit"}
           >
-            <FiEdit2 size={14} />
+            <FiEdit2 size={13} />
           </button>
           <button
             onClick={() => setViewMode("split")}
-            className={`skeuo-btn w-8 h-8 flex items-center justify-center rounded-lg ${
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
               viewMode === "split" ? "active" : ""
             }`}
             aria-label="Split mode"
             aria-pressed={viewMode === "split"}
           >
-            <div className="flex gap-0.5">
+            <div className="flex gap-px">
               <div className="w-1.5 h-3 rounded-sm" style={{ border: "1.5px solid currentColor" }} />
               <div className="w-1.5 h-3 rounded-sm" style={{ border: "1.5px solid currentColor" }} />
             </div>
           </button>
           <button
             onClick={() => setViewMode("preview")}
-            className={`skeuo-btn w-8 h-8 flex items-center justify-center rounded-lg ${
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
               viewMode === "preview" ? "active" : ""
             }`}
             aria-label="Preview mode"
             aria-pressed={viewMode === "preview"}
           >
-            <FiEye size={14} />
+            <FiEye size={13} />
           </button>
         </div>
 
         {/* Actions */}
-        <button
-          onClick={() => addNote()}
-          className="skeuo-btn w-8 h-8 flex items-center justify-center rounded-lg"
-          aria-label="New note"
-        >
-          <FiPlus size={14} />
-        </button>
-        <button
-          onClick={handleDelete}
-          className="skeuo-btn w-8 h-8 flex items-center justify-center rounded-lg"
-          aria-label="Delete note"
-        >
-          <FiTrash2 size={14} />
-        </button>
+        <div className="flex items-center gap-0.5 ml-1">
+          <button
+            onClick={() => addNote()}
+            className="skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg"
+            aria-label="New note"
+          >
+            <FiPlus size={13} />
+          </button>
+          <button
+            onClick={handleDelete}
+            className="skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg"
+            aria-label="Delete note"
+          >
+            <FiTrash2 size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Title editor */}
-      <div className="px-6 pt-4 pb-2" style={{ background: "var(--bg-panel)" }}>
+      <div className="px-8 pt-6 pb-3" style={{ background: "var(--bg-panel)" }}>
         <input
           value={selectedNote.title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          className="w-full text-2xl font-bold bg-transparent border-none focus:outline-none"
-          style={{ color: "var(--text-primary)" }}
-          placeholder="Note title..."
+          className="w-full text-3xl font-bold bg-transparent border-none focus:outline-none tracking-tight"
+          style={{ color: "var(--text-primary)", lineHeight: "1.2" }}
+          placeholder="Untitled"
           aria-label="Note title"
         />
+        {selectedNote.tags && selectedNote.tags.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {selectedNote.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-[10px] px-2 py-0.5 rounded-md font-medium"
+                style={{
+                  color: tag.color || "var(--accent-primary)",
+                  backgroundColor: tag.color ? `${tag.color}10` : "rgba(250, 204, 21, 0.06)",
+                }}
+              >
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Editor / Preview area */}
@@ -639,12 +368,12 @@ export function MarkdownEditor() {
         {(viewMode === "edit" || viewMode === "split") && (
           <div className={`${viewMode === "split" ? "w-1/2 border-r" : "w-full"} flex flex-col min-h-0`} style={{ borderColor: "var(--border-dark)" }}>
             <div className="flex-1 overflow-hidden p-4">
-              <div className="w-full h-full skeuo-inset overflow-hidden">
+              <div className="w-full h-full skeuo-inset overflow-hidden rounded-xl">
                 <textarea
                   ref={textareaRef}
                   value={selectedNote.content}
                   onChange={(e) => handleContentChange(e.target.value)}
-                  className="w-full h-full p-6 resize-none bg-transparent border-none text-sm leading-relaxed custom-scrollbar font-mono focus:outline-none"
+                  className="w-full h-full p-6 resize-none bg-transparent border-none text-[15px] leading-[1.85] custom-scrollbar font-mono focus:outline-none"
                   style={{ color: "var(--text-primary)" }}
                   placeholder="Start writing in Markdown...&#10;&#10;Link notes with [[Double Brackets]]"
                   aria-label="Markdown editor"
@@ -658,27 +387,27 @@ export function MarkdownEditor() {
         {/* Preview pane */}
         {(viewMode === "preview" || viewMode === "split") && (
           <div className={`${viewMode === "split" ? "w-1/2" : "w-full"} flex flex-col min-h-0`}>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-              <article className="max-w-none prose-tesserin">
-                {renderMarkdown(selectedNote.content, { existingTitles, onLinkClick: navigateToWikiLink, textSize: "text-sm" })}
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-6">
+              <article className="max-w-2xl mx-auto prose-tesserin">
+                {renderMarkdown(selectedNote.content, { existingTitles, onLinkClick: navigateToWikiLink, textSize: "text-base" })}
               </article>
 
               {/* Backlinks section */}
               {backlinks.length > 0 && (
-                <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border-dark)" }}>
+                <div className="max-w-2xl mx-auto mt-10 pt-6" style={{ borderTop: "1px solid var(--border-dark)" }}>
                   <h3
-                    className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2"
+                    className="text-[10px] font-semibold uppercase tracking-widest mb-3 flex items-center gap-2"
                     style={{ color: "var(--text-tertiary)" }}
                   >
-                    <FiLink2 size={14} />
+                    <FiLink2 size={12} />
                     Backlinks ({backlinks.length})
                   </h3>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1">
                     {backlinks.map((bl) => (
                       <button
                         key={bl.id}
-                        onClick={() => selectNote(bl.id)}
-                        className="text-left px-3 py-2 rounded-lg text-sm transition-colors duration-150 flex items-center gap-2"
+                        onClick={() => effectiveSelectNote(bl.id)}
+                        className="text-left px-3 py-2 rounded-lg text-sm transition-all duration-150 flex items-center gap-2"
                         style={{ color: "var(--accent-primary)" }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"

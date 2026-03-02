@@ -4,6 +4,7 @@ import { registerIpcHandlers } from './ipc-handlers'
 import { initDatabase, getSetting } from './database'
 import { startMcpServerStdio } from './mcp-server'
 import { startApiServer } from './api-server'
+import { cloudAgentManager } from './cloud-agents'
 
 // ── Global error handlers ───────────────────────────────────────
 // Prevent the main process from crashing silently on unhandled errors.
@@ -28,8 +29,7 @@ function resolveIconPath(): string {
   }
   // On Windows, prefer .ico for sharp rendering in taskbar/alt-tab
   if (process.platform === 'win32') {
-    const icoPath = path.join(process.resourcesPath, 'icon.png')
-    return icoPath
+    return path.join(process.resourcesPath, 'icon.ico')
   }
   // Linux
   return path.join(process.resourcesPath, 'icon.png')
@@ -91,6 +91,17 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Set application icon — on Linux this updates the dock/taskbar icon
+  // (BrowserWindow.icon alone doesn't reach the taskbar on GNOME/Wayland)
+  // app.setIcon() is only available on Linux
+  if (process.platform === 'linux') {
+    try {
+      const appIcon = nativeImage.createFromPath(iconPath)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!appIcon.isEmpty()) (app as any).setIcon(appIcon)
+    } catch { /* non-fatal */ }
+  }
+
   // Initialize SQLite database (non-fatal — app works without it via in-memory fallback)
   try {
     initDatabase()
@@ -100,12 +111,20 @@ app.whenReady().then(() => {
     console.error('[Tesserin] App will continue with in-memory storage fallback')
   }
 
-  // Register all IPC handlers (DB, AI, FS)
+  // Register all IPC handlers (DB, AI, FS, Agents, KB)
   try {
     registerIpcHandlers()
     console.log('[Tesserin] IPC handlers registered')
   } catch (err) {
     console.error('[Tesserin] Failed to register IPC handlers:', err)
+  }
+
+  // Load persisted cloud agent configurations
+  try {
+    cloudAgentManager.loadFromSettings()
+    console.log('[Tesserin] Cloud agent configs loaded')
+  } catch (err) {
+    console.error('[Tesserin] Failed to load cloud agents:', err)
   }
 
   // Auto-start API server if it was previously enabled

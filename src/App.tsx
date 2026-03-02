@@ -21,10 +21,13 @@ import { ReferenceManager } from "@/components/tesserin/panels/reference-manager
 // Workspace
 import { MarkdownEditor } from "@/components/tesserin/workspace/markdown-editor"
 import { CreativeCanvas } from "@/components/tesserin/workspace/creative-canvas"
+import { CanvasSidebar } from "@/components/tesserin/workspace/canvas-sidebar"
 import { D3GraphView } from "@/components/tesserin/workspace/d3-graph-view"
 import { SAMNode } from "@/components/tesserin/workspace/sam-node"
-import { SplitPanes, useSplitPanes } from "@/components/tesserin/workspace/split-panes"
+import { SplitPaneLayout, useSplitPanes, type ViewDefinition, type PaneRenderProps } from "@/components/tesserin/workspace/split-panes"
 import { SettingsPanel } from "@/components/tesserin/panels/settings-panel"
+import { FiFileText, FiCompass, FiSettings } from "react-icons/fi"
+import { HiOutlineCpuChip, HiOutlineSparkles } from "react-icons/hi2"
 
 // Lazy import for quick capture overlay (not a core tab, just an overlay)
 const DailyNotes = React.lazy(() =>
@@ -32,6 +35,7 @@ const DailyNotes = React.lazy(() =>
 )
 
 import { NotesProvider, useNotes } from "@/lib/notes-store"
+import { useCanvasStore } from "@/lib/canvas-store"
 import { usePlugins } from "@/lib/plugin-system"
 import { DEFAULT_SHORTCUTS, matchesShortcut, loadCustomShortcuts, getEffectiveBinding } from "@/lib/keyboard-shortcuts"
 import { getStartupTip, formatShortcut, type TesserinTip } from "@/lib/tips"
@@ -104,9 +108,50 @@ function AppContent() {
     const [notice, setNotice] = useState<{ message: string; visible: boolean }>({ message: "", visible: false })
     const { notes, selectedNoteId, selectNote } = useNotes()
     const { panels } = usePlugins()
-    const { splitState, openSplit, closeSplit } = useSplitPanes()
+    const canvasStore = useCanvasStore()
+    const { splitState, openSplit, closeSplit, setSecondaryView, setSecondaryNote, toggleDirection } = useSplitPanes()
 
     const selectedNote = notes.find(n => n.id === selectedNoteId) || null
+
+    // Universal workspace views for the split pane system
+    const workspaceViews = useMemo<ViewDefinition[]>(() => {
+        const views: ViewDefinition[] = [
+            { id: "notes", label: "Notes", icon: FiFileText },
+            { id: "canvas", label: "Canvas", icon: FiCompass },
+            { id: "graph", label: "Graph", icon: HiOutlineCpuChip },
+            { id: "sam", label: "SAM", icon: HiOutlineSparkles },
+            { id: "settings", label: "Settings", icon: FiSettings },
+        ]
+        for (const p of panels.filter((pl) => pl.location === "workspace")) {
+            views.splice(views.length - 1, 0, {
+                id: p.id,
+                label: p.label,
+                icon: (props: { size: number }) => <span style={{ fontSize: props.size }}>{p.icon}</span>,
+            })
+        }
+        return views
+    }, [panels])
+
+    // Render callback for universal panes
+    const renderView = useCallback((viewType: string, props: PaneRenderProps) => {
+        switch (viewType) {
+            case "notes":
+                return <MarkdownEditor noteId={props.noteId} onSelectNote={props.onSelectNote} isSecondary={props.isSecondary} />
+            case "canvas":
+                return <CreativeCanvas />
+            case "graph":
+                return <D3GraphView />
+            case "sam":
+                return <SAMNode />
+            case "settings":
+                return <SettingsPanel />
+            default: {
+                const panel = panels.find((p) => p.location === "workspace" && p.id === viewType)
+                if (panel) return <panel.component />
+                return null
+            }
+        }
+    }, [panels])
 
     // Feature toggles — control which features are shown
     const [features, setFeatures] = useState<Record<string, boolean>>({})
@@ -248,31 +293,34 @@ function AppContent() {
                                 />
                             )}
 
+                            {/* Canvas sidebar (visible on canvas tab) */}
+                            {activeTab === "canvas" && (
+                                <CanvasSidebar
+                                    canvases={canvasStore.canvases}
+                                    activeCanvasId={canvasStore.activeCanvasId}
+                                    isLoading={canvasStore.isLoading}
+                                    onSelect={canvasStore.setActiveCanvas}
+                                    onCreate={() => canvasStore.createCanvas("Untitled Canvas")}
+                                    onRename={canvasStore.renameCanvas}
+                                    onDuplicate={canvasStore.duplicateCanvas}
+                                    onDelete={canvasStore.deleteCanvas}
+                                />
+                            )}
+
                             {/* Active workspace panel – all panels stay mounted, only the active one is visible. */}
                             <SkeuoPanel className="flex-1 h-full flex flex-col overflow-hidden">
-                                <div className={`w-full h-full ${activeTab === "notes" ? "" : "hidden"}`}>
-                                    <SplitPanes
-                                        primaryContent={<MarkdownEditor />}
-                                        onRequestSplit={() => openSplit()}
-                                        secondaryContent={splitState.isActive && isFeatureEnabled("features.splitPanes") ? <MarkdownEditor /> : null}
-                                        secondaryLabel="Split Editor"
-                                        onCloseSecondary={closeSplit}
-                                        direction={splitState.direction}
-                                    />
-                                </div>
-                                <div className={`w-full h-full ${activeTab === "canvas" ? "" : "hidden"}`}><CreativeCanvas /></div>
-                                <div className={`w-full h-full ${activeTab === "graph" ? "" : "hidden"}`}><D3GraphView /></div>
-                                <div className={`w-full h-full ${activeTab === "sam" ? "" : "hidden"}`}><SAMNode /></div>
-                                <div className={`w-full h-full ${activeTab === "settings" ? "" : "hidden"}`}><SettingsPanel /></div>
-                                {/* Dynamic plugin workspace panels */}
-                                {panels
-                                    .filter((p) => p.location === "workspace")
-                                    .map((p) => (
-                                        <div key={p.id} className={`w-full h-full ${activeTab === p.id ? "" : "hidden"}`}>
-                                            <p.component />
-                                        </div>
-                                    ))
-                                }
+                                <SplitPaneLayout
+                                    views={workspaceViews}
+                                    primaryViewType={activeTab}
+                                    onPrimaryViewChange={(v) => setActiveTab(v as TabId)}
+                                    renderView={renderView}
+                                    splitState={splitState}
+                                    onSplitOpen={openSplit}
+                                    onSplitClose={closeSplit}
+                                    onSecondaryViewChange={setSecondaryView}
+                                    onDirectionToggle={toggleDirection}
+                                    splitEnabled={isFeatureEnabled("features.splitPanes")}
+                                />
                             </SkeuoPanel>
 
                             {/* Right panels: Backlinks / Version History */}
@@ -355,19 +403,13 @@ function AppContent() {
 
 export default function App() {
     const [loading, setLoading] = useState(true)
+    const [fadingOut, setFadingOut] = useState(false)
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 2000)
-        return () => clearTimeout(timer)
+        const fadeTimer = setTimeout(() => setFadingOut(true), 1600)
+        const removeTimer = setTimeout(() => setLoading(false), 2000)
+        return () => { clearTimeout(fadeTimer); clearTimeout(removeTimer) }
     }, [])
-
-    if (loading) {
-        return (
-            <TesserinThemeProvider>
-                <LoadingScreen />
-            </TesserinThemeProvider>
-        )
-    }
 
     return (
         <TesserinThemeProvider>
@@ -376,6 +418,7 @@ export default function App() {
                     <AppContent />
                 </NotesProvider>
             </ErrorBoundary>
+            {loading && <LoadingScreen fadingOut={fadingOut} />}
         </TesserinThemeProvider>
     )
 }

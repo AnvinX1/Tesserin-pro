@@ -36,6 +36,7 @@ import {
   FiServer,
   FiCompass,
   FiClock,
+  FiDroplet,
 } from "react-icons/fi"
 import {
   HiOutlineCpuChip,
@@ -48,6 +49,7 @@ import { useTesserinTheme } from "@/components/tesserin/core/theme-provider"
 import { usePlugins, pluginRegistry } from "@/lib/plugin-system"
 import { usePluginAPI } from "@/components/tesserin/core/plugin-provider"
 import { CommunityPluginsPanel } from "@/components/tesserin/panels/community-plugins-panel"
+import { ThemesPanel } from "@/components/tesserin/panels/theme-panel"
 import {
   DEFAULT_SHORTCUTS,
   loadCustomShortcuts,
@@ -176,7 +178,7 @@ const DEFAULTS: SettingsValues = {
 /*  Section definitions                                                */
 /* ------------------------------------------------------------------ */
 
-type SectionId = "general" | "editor" | "ai" | "mcp" | "api" | "appearance" | "vault" | "plugins" | "marketplace" | "features" | "shortcuts" | "about"
+type SectionId = "general" | "editor" | "ai" | "mcp" | "api" | "agents" | "appearance" | "themes" | "vault" | "plugins" | "marketplace" | "features" | "shortcuts" | "about"
 
 const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <FiSettings size={16} /> },
@@ -184,7 +186,9 @@ const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: "ai", label: "AI / SAM", icon: <HiOutlineCpuChip size={16} /> },
   { id: "mcp", label: "MCP", icon: <FiLink size={16} /> },
   { id: "api", label: "API", icon: <FiKey size={16} /> },
+  { id: "agents", label: "Cloud Agents", icon: <FiGlobe size={16} /> },
   { id: "appearance", label: "Appearance", icon: <FiSun size={16} /> },
+  { id: "themes", label: "Themes", icon: <FiDroplet size={16} /> },
   { id: "features", label: "Features", icon: <FiGrid size={16} /> },
   { id: "vault", label: "Vault & Data", icon: <FiDatabase size={16} /> },
   { id: "plugins", label: "Plugins", icon: <FiPackage size={16} /> },
@@ -399,6 +403,30 @@ export function SettingsPanel() {
   const [apiPort, setApiPort] = useState("9960")
   const [apiCopied, setApiCopied] = useState(false)
 
+  // Cloud agents state
+  const [agents, setAgents] = useState<Array<{
+    id: string; name: string; type: string; transport: string;
+    enabled: boolean; dockerImage?: string; command?: string;
+    knowledgeBaseAccess: boolean; permissions: string[];
+  }>>([])
+  const [agentStatuses, setAgentStatuses] = useState<Array<{
+    agentId: string; agentName: string; status: string;
+    toolCount: number; error?: string;
+  }>>([])
+  const [agentTokens, setAgentTokens] = useState<Array<{
+    id: string; agentId: string; token: string; name: string;
+    permissions: string[]; createdAt: string; expiresAt?: string; isRevoked: boolean;
+  }>>([])
+  const [agentNewType, setAgentNewType] = useState("claude-code")
+  const [agentNewTokenId, setAgentNewTokenId] = useState<string | null>(null)
+  const [agentNewTokenRevealed, setAgentNewTokenRevealed] = useState<string | null>(null)
+  const [agentTokenCopied, setAgentTokenCopied] = useState(false)
+  const [agentExpandedId, setAgentExpandedId] = useState<string | null>(null)
+
+  // Shortcuts state (hoisted from renderShortcuts to avoid conditional hook calls)
+  const [customShortcuts, setCustomShortcuts] = useState<Record<string, string>>({})
+  const [capturing, setCapturing] = useState<string | null>(null)
+
   // Load plugin enabled states from localStorage
   // Core plugins default to true (enabled), others default to their current enabled state
   const corePluginIds = useMemo(() => new Set(["com.tesserin.word-count", "com.tesserin.daily-quote", "com.tesserin.backlinks"]), [])
@@ -432,6 +460,53 @@ export function SettingsPanel() {
     }
     loadApi()
   }, [])
+
+  // Load cloud agents
+  const loadAgents = useCallback(async () => {
+    if (typeof window !== "undefined" && window.tesserin?.agents) {
+      try {
+        const list = await window.tesserin.agents.list()
+        setAgents(list)
+        const statuses = await window.tesserin.agents.statuses()
+        setAgentStatuses(statuses)
+      } catch {}
+    }
+  }, [])
+
+  const loadAgentTokens = useCallback(async (agentId: string) => {
+    if (typeof window !== "undefined" && window.tesserin?.agents) {
+      try {
+        const tokens = await window.tesserin.agents.getTokens(agentId)
+        setAgentTokens(tokens)
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    loadAgents()
+  }, [loadAgents])
+
+  // Load custom shortcuts
+  useEffect(() => {
+    loadCustomShortcuts().then(setCustomShortcuts)
+  }, [])
+
+  // Keyboard capture for shortcut remapping
+  useEffect(() => {
+    if (!capturing) return
+    const handler = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const combo = eventToShortcutString(e)
+      if (!combo) return
+      const next = { ...customShortcuts, [capturing]: combo }
+      setCustomShortcuts(next)
+      saveCustomShortcuts(next)
+      setCapturing(null)
+    }
+    window.addEventListener("keydown", handler, true)
+    return () => window.removeEventListener("keydown", handler, true)
+  }, [capturing, customShortcuts])
 
   /* ---- Load persisted settings ---- */
   useEffect(() => {
@@ -1252,29 +1327,6 @@ export function SettingsPanel() {
   )
 
   const renderShortcuts = () => {
-    const [customShortcuts, setCustomShortcuts] = React.useState<Record<string, string>>({})
-    const [capturing, setCapturing] = React.useState<string | null>(null)
-
-    React.useEffect(() => {
-      loadCustomShortcuts().then(setCustomShortcuts)
-    }, [])
-
-    React.useEffect(() => {
-      if (!capturing) return
-      const handler = (e: KeyboardEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const combo = eventToShortcutString(e)
-        if (!combo) return
-        const next = { ...customShortcuts, [capturing]: combo }
-        setCustomShortcuts(next)
-        saveCustomShortcuts(next)
-        setCapturing(null)
-      }
-      window.addEventListener("keydown", handler, true)
-      return () => window.removeEventListener("keydown", handler, true)
-    }, [capturing, customShortcuts])
-
     const resetShortcut = (id: string) => {
       const next = { ...customShortcuts }
       delete next[id]
@@ -1866,8 +1918,393 @@ export function SettingsPanel() {
             <div>GET  /api/folders · POST /api/folders · DELETE /api/folders/:id</div>
             <div>GET  /api/tasks · POST /api/tasks · PUT /api/tasks/:id</div>
             <div>POST /api/ai/chat · /api/ai/summarize · /api/ai/generate-tags</div>
+            <div>GET  /api/knowledge/graph · /api/knowledge/context</div>
+            <div>POST /api/knowledge/search · GET /api/knowledge/export</div>
+            <div>GET  /api/agents · POST /api/agents/register</div>
             <div>GET  /api/vault/summary · /api/health</div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ---- Cloud agent handlers ---- */
+  const registerAgent = useCallback(async () => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    try {
+      await window.tesserin.agents.register(agentNewType, {})
+      await loadAgents()
+    } catch (err) {
+      console.error("[Agents] Failed to register:", err)
+    }
+  }, [agentNewType, loadAgents])
+
+  const connectAgent = useCallback(async (agentId: string) => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    try {
+      await window.tesserin.agents.connect(agentId)
+      await loadAgents()
+    } catch (err) {
+      console.error("[Agents] Failed to connect:", err)
+    }
+  }, [loadAgents])
+
+  const disconnectAgent = useCallback(async (agentId: string) => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    try {
+      await window.tesserin.agents.disconnect(agentId)
+      await loadAgents()
+    } catch (err) {
+      console.error("[Agents] Failed to disconnect:", err)
+    }
+  }, [loadAgents])
+
+  const removeAgent = useCallback(async (agentId: string) => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    if (!confirm("Remove this cloud agent?")) return
+    try {
+      await window.tesserin.agents.remove(agentId)
+      setAgentExpandedId(null)
+      await loadAgents()
+    } catch (err) {
+      console.error("[Agents] Failed to remove:", err)
+    }
+  }, [loadAgents])
+
+  const createAgentToken = useCallback(async (agentId: string) => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    try {
+      const result = await window.tesserin.agents.createToken(agentId, "api-access", ["vault:read", "vault:write", "ai:use"])
+      if (result) {
+        setAgentNewTokenRevealed(result.rawToken)
+        setAgentNewTokenId(agentId)
+      }
+      await loadAgentTokens(agentId)
+    } catch (err) {
+      console.error("[Agents] Failed to create token:", err)
+    }
+  }, [loadAgentTokens])
+
+  const revokeAgentToken = useCallback(async (agentId: string, tokenId: string) => {
+    if (typeof window === "undefined" || !window.tesserin?.agents) return
+    try {
+      await window.tesserin.agents.revokeToken(agentId, tokenId)
+      await loadAgentTokens(agentId)
+    } catch (err) {
+      console.error("[Agents] Failed to revoke token:", err)
+    }
+  }, [loadAgentTokens])
+
+  const copyAgentToken = useCallback((text: string) => {
+    navigator.clipboard.writeText(text)
+    setAgentTokenCopied(true)
+    setTimeout(() => setAgentTokenCopied(false), 2000)
+  }, [])
+
+  const AGENT_TYPES = [
+    { value: "claude-code", label: "Claude Code" },
+    { value: "gemini-cli", label: "Gemini CLI" },
+    { value: "openai-codex", label: "OpenAI Codex" },
+    { value: "opencode", label: "OpenCode" },
+    { value: "custom", label: "Custom Agent" },
+  ]
+
+  const renderCloudAgents = () => {
+    return (
+      <div>
+        <SectionHeading title="Cloud Agents" icon={<FiGlobe size={16} />} />
+
+        <div className="text-[11px] mb-4" style={{ color: "var(--text-tertiary)" }}>
+          Connect external AI agents (Claude Code, Gemini CLI, Codex, etc.) to Tesserin via MCP.
+          Cloud agents can access your notes and knowledge graph as context, enabling powerful multi-agent workflows.
+        </div>
+
+        {/* Docker MCP status */}
+        <div
+          className="mb-4 p-3.5 rounded-xl"
+          style={{
+            background: "var(--bg-panel-inset)",
+            boxShadow: "var(--input-inner-shadow)",
+            border: "1px solid var(--border-dark)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <FiServer size={12} style={{ color: "var(--accent-primary)" }} />
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>Docker MCP Integration</span>
+          </div>
+          <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>
+            Cloud agents connect via Docker MCP Toolkit. Ensure Docker Desktop is running with MCP Toolkit enabled.
+            Agents use the <code className="font-mono" style={{ color: "var(--accent-primary)" }}>mcp.json</code> configuration in the project root.
+          </div>
+        </div>
+
+        {/* Register new agent */}
+        <div className="mb-5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-tertiary)" }}>
+            ADD CLOUD AGENT
+          </div>
+          <div
+            className="p-3.5 rounded-xl space-y-3"
+            style={{
+              background: "var(--bg-panel-inset)",
+              boxShadow: "var(--input-inner-shadow)",
+              border: "1px solid var(--border-dark)",
+            }}
+          >
+            <div className="flex gap-2">
+              <SelectInput
+                value={agentNewType}
+                onChange={setAgentNewType}
+                options={AGENT_TYPES}
+              />
+              <button
+                onClick={registerAgent}
+                className="skeuo-btn px-3 py-1.5 rounded-xl text-[10px] font-semibold flex items-center gap-1.5 hover:brightness-110 active:scale-95 transition-all"
+                style={{ color: "var(--accent-primary)" }}
+              >
+                <FiPlus size={11} />
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Registered agents list */}
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-tertiary)" }}>
+            REGISTERED AGENTS ({agents.length})
+          </div>
+
+          {agents.length === 0 && (
+            <div className="text-[11px] py-4 text-center" style={{ color: "var(--text-tertiary)", opacity: 0.6 }}>
+              No cloud agents registered yet. Add one above to get started.
+            </div>
+          )}
+
+          {agents.map((agent) => {
+            const status = agentStatuses.find((s) => s.agentId === agent.id)
+            const isConnected = status?.status === "connected"
+            const isError = status?.status === "error"
+            const isExpanded = agentExpandedId === agent.id
+
+            return (
+              <div
+                key={agent.id}
+                className="mb-2 rounded-xl overflow-hidden"
+                style={{
+                  background: "var(--bg-panel-inset)",
+                  boxShadow: "var(--input-inner-shadow)",
+                  border: "1px solid var(--border-dark)",
+                }}
+              >
+                {/* Agent header row */}
+                <div className="p-3 flex items-center justify-between">
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => {
+                      setAgentExpandedId(isExpanded ? null : agent.id)
+                      if (!isExpanded) loadAgentTokens(agent.id)
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{
+                          backgroundColor: isConnected ? "#22c55e" : isError ? "#ef4444" : "#666",
+                          boxShadow: isConnected ? "0 0 6px #22c55e" : isError ? "0 0 6px #ef4444" : "none",
+                        }}
+                      />
+                      <span className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                        {agent.name}
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-tertiary)" }}>
+                        {agent.type}
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-tertiary)" }}>
+                        {agent.transport}
+                      </span>
+                      {isConnected && status && (
+                        <span className="text-[9px]" style={{ color: "#22c55e" }}>
+                          {status.toolCount} tool{status.toolCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                    {isError && status?.error && (
+                      <div className="text-[9px] mt-1 truncate" style={{ color: "#ef4444" }}>{status.error}</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    {isConnected ? (
+                      <button
+                        onClick={() => disconnectAgent(agent.id)}
+                        className="skeuo-btn px-2 py-1 rounded-lg text-[9px] font-semibold flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        <FiPause size={9} /> Disconnect
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => connectAgent(agent.id)}
+                        className="skeuo-btn px-2 py-1 rounded-lg text-[9px] font-semibold flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all"
+                        style={{ color: "var(--accent-primary)" }}
+                      >
+                        <FiPlay size={9} /> Connect
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeAgent(agent.id)}
+                      className="skeuo-btn px-2 py-1 rounded-lg text-[9px] font-semibold flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all"
+                      style={{ color: "#ef4444" }}
+                    >
+                      <FiTrash2 size={9} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 space-y-3 border-t" style={{ borderColor: "var(--border-dark)" }}>
+                    {/* Agent info */}
+                    <div className="pt-3 flex flex-wrap gap-2 text-[9px]" style={{ color: "var(--text-tertiary)" }}>
+                      {agent.dockerImage && <span>Docker: <code className="font-mono" style={{ color: "var(--accent-primary)" }}>{agent.dockerImage}</code></span>}
+                      {agent.command && <span>Command: <code className="font-mono" style={{ color: "var(--accent-primary)" }}>{agent.command}</code></span>}
+                      <span>KB Access: {agent.knowledgeBaseAccess ? "✓" : "✗"}</span>
+                    </div>
+
+                    {/* Permissions */}
+                    <div>
+                      <div className="text-[9px] font-semibold mb-1" style={{ color: "var(--text-tertiary)" }}>Permissions</div>
+                      <div className="flex flex-wrap gap-1">
+                        {agent.permissions.map((p) => (
+                          <span
+                            key={p}
+                            className="px-1.5 py-0.5 rounded text-[8px] font-mono"
+                            style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-tertiary)", border: "1px solid var(--border-dark)" }}
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Token management */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[9px] font-semibold" style={{ color: "var(--text-tertiary)" }}>Agent Tokens</div>
+                        <button
+                          onClick={() => createAgentToken(agent.id)}
+                          className="skeuo-btn px-2 py-0.5 rounded-lg text-[8px] font-semibold flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all"
+                          style={{ color: "var(--accent-primary)" }}
+                        >
+                          <FiPlus size={8} /> New Token
+                        </button>
+                      </div>
+
+                      {/* Revealed new token */}
+                      {agentNewTokenRevealed && agentNewTokenId === agent.id && (
+                        <div
+                          className="mb-2 p-2.5 rounded-lg"
+                          style={{ background: "rgba(250,204,21,0.06)", border: "1px solid rgba(250,204,21,0.2)" }}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <FiAlertTriangle size={10} style={{ color: "var(--accent-primary)" }} />
+                            <span className="text-[9px] font-bold" style={{ color: "var(--accent-primary)" }}>Copy now — won't be shown again!</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <code
+                              className="flex-1 text-[9px] font-mono p-1.5 rounded break-all"
+                              style={{ backgroundColor: "var(--bg-panel-inset)", color: "var(--text-primary)", border: "1px solid var(--border-dark)" }}
+                            >
+                              {agentNewTokenRevealed}
+                            </code>
+                            <button
+                              onClick={() => copyAgentToken(agentNewTokenRevealed)}
+                              className="skeuo-btn p-1.5 rounded-lg hover:brightness-110 active:scale-95 transition-all"
+                              style={{ color: agentTokenCopied ? "#22c55e" : "var(--text-secondary)" }}
+                            >
+                              {agentTokenCopied ? <FiCheck size={12} /> : <FiCopy size={12} />}
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => { setAgentNewTokenRevealed(null); setAgentNewTokenId(null) }}
+                            className="mt-1.5 text-[8px] font-medium"
+                            style={{ color: "var(--text-tertiary)" }}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Existing tokens */}
+                      {agentTokens.filter((t) => t.agentId === agent.id).map((tok) => (
+                        <div
+                          key={tok.id}
+                          className="mb-1 p-2 rounded-lg flex items-center justify-between"
+                          style={{
+                            backgroundColor: "var(--bg-panel)",
+                            border: "1px solid var(--border-dark)",
+                            opacity: tok.isRevoked ? 0.5 : 1,
+                          }}
+                        >
+                          <div>
+                            <span className="text-[9px] font-semibold" style={{ color: "var(--text-secondary)" }}>{tok.name}</span>
+                            <span className="text-[8px] ml-2" style={{ color: "var(--text-tertiary)" }}>
+                              {new Date(tok.createdAt).toLocaleDateString()}
+                            </span>
+                            {tok.isRevoked && (
+                              <span className="text-[8px] ml-2" style={{ color: "#ef4444" }}>Revoked</span>
+                            )}
+                          </div>
+                          {!tok.isRevoked && (
+                            <button
+                              onClick={() => revokeAgentToken(agent.id, tok.id)}
+                              className="skeuo-btn px-1.5 py-0.5 rounded text-[8px] font-semibold hover:brightness-110 active:scale-95 transition-all"
+                              style={{ color: "#f59e0b" }}
+                            >
+                              <FiShield size={8} /> Revoke
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Usage docs */}
+        <div
+          className="mt-6 p-3.5 rounded-xl text-[10px] leading-relaxed space-y-2"
+          style={{
+            backgroundColor: "var(--bg-panel-inset)",
+            color: "var(--text-tertiary)",
+            boxShadow: "var(--input-inner-shadow)",
+            border: "1px solid var(--border-dark)",
+          }}
+        >
+          <div className="text-[10px] font-semibold" style={{ color: "var(--text-secondary)" }}>How it works</div>
+          <div>
+            1. Register a cloud agent by type (Claude Code, Gemini CLI, etc.)
+          </div>
+          <div>
+            2. Generate an agent token — this authenticates the agent to your vault's REST API.
+          </div>
+          <div>
+            3. Connect the agent — it will start an MCP session with access to your notes and knowledge graph.
+          </div>
+          <div>
+            4. External agents can also connect via Docker MCP Toolkit using the <code className="font-mono" style={{ color: "var(--accent-primary)" }}>mcp.json</code> config.
+          </div>
+          <code
+            className="block p-2 rounded-lg font-mono text-[9px] whitespace-pre mt-2"
+            style={{ backgroundColor: "var(--bg-panel)", color: "var(--accent-primary)" }}
+          >
+{`# Agent token auth:
+curl http://127.0.0.1:${apiServerStatus.port}/api/knowledge/graph \\
+  -H "Authorization: Agent YOUR_AGENT_TOKEN"`}
+          </code>
         </div>
       </div>
     )
@@ -2000,6 +2437,12 @@ export function SettingsPanel() {
     )
   }
 
+  const renderThemes = () => (
+    <div className="h-full">
+      <ThemesPanel />
+    </div>
+  )
+
   const renderMarketplace = () => (
     <div className="h-full">
       <CommunityPluginsPanel />
@@ -2115,7 +2558,9 @@ export function SettingsPanel() {
       case "ai": return renderAI()
       case "mcp": return renderMCP()
       case "api": return renderApi()
+      case "agents": return renderCloudAgents()
       case "appearance": return renderAppearance()
+      case "themes": return renderThemes()
       case "features": return renderFeatures()
       case "vault": return renderVault()
       case "plugins": return renderPlugins()
@@ -2124,7 +2569,7 @@ export function SettingsPanel() {
       case "about": return renderAbout()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSection, settings, aiStatus, aiModels, vaultStats, mcp.servers, mcp.statuses, mcp.tools, mcpNewServerName, mcpNewServerTransport, mcpNewServerUrl, mcpNewServerCommand, mcpNewServerArgs, registeredPlugins, pluginToggles, apiKeys, apiServerStatus, apiNewKeyName, apiNewKeyPermissions, apiNewKeyRevealed, apiPort, apiCopied])
+  }, [activeSection, settings, aiStatus, aiModels, vaultStats, mcp.servers, mcp.statuses, mcp.tools, mcpNewServerName, mcpNewServerTransport, mcpNewServerUrl, mcpNewServerCommand, mcpNewServerArgs, registeredPlugins, pluginToggles, apiKeys, apiServerStatus, apiNewKeyName, apiNewKeyPermissions, apiNewKeyRevealed, apiPort, apiCopied, agents, agentStatuses, agentTokens, agentNewType, agentExpandedId, agentNewTokenRevealed, agentNewTokenId, agentTokenCopied, customShortcuts, capturing])
 
   /* ================================================================ */
   /*  RENDER                                                           */
@@ -2214,7 +2659,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Section content */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeSection === "marketplace" ? "p-0" : "p-6"}`}>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeSection === "marketplace" || activeSection === "themes" ? "p-4" : "p-6"}`}>
           {sectionContent}
         </div>
       </div>

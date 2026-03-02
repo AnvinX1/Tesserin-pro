@@ -5,13 +5,22 @@
  * Any external agent, script, or integration can interact with Tesserin
  * by generating an API key from Settings → API.
  *
+ * Enhanced with:
+ * - Knowledge graph endpoints for AI context injection
+ * - Cloud agent management and token endpoints
+ * - Docker MCP integration endpoints
+ * - Agent token authentication (in addition to API keys)
+ *
  * All endpoints require the header: Authorization: Bearer <api-key>
+ * Agent tokens use: Authorization: Agent <agent-token>
  */
 
 import http from "http"
 import { randomBytes, timingSafeEqual } from "crypto"
 import * as db from "./database"
 import * as ai from "./ai-service"
+import * as kb from "./knowledge-base"
+import { cloudAgentManager, type AgentPermission } from "./cloud-agents"
 
 /* ================================================================== */
 /*  API Key Management                                                 */
@@ -68,6 +77,61 @@ function verifyApiKey(rawKey: string): ApiKey | null {
     }
   }
   return null
+}
+
+/* ================================================================== */
+/*  Rate Limiting — Token Bucket per client key                        */
+/* ================================================================== */
+
+interface TokenBucket {
+  tokens: number
+  lastRefill: number
+}
+
+const RATE_LIMIT_MAX_TOKENS = 60  // max requests
+const RATE_LIMIT_REFILL_RATE = 60 // tokens per minute
+const RATE_LIMIT_WINDOW_MS = 60_000
+
+const rateBuckets = new Map<string, TokenBucket>()
+
+/** Clean up stale buckets every 5 minutes */
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, bucket] of rateBuckets) {
+    if (now - bucket.lastRefill > RATE_LIMIT_WINDOW_MS * 5) {
+      rateBuckets.delete(key)
+    }
+  }
+}, 5 * 60_000).unref()
+
+/**
+ * Check and consume a rate limit token. Returns true if allowed, false if rate-limited.
+ */
+function checkRateLimit(clientKey: string): { allowed: boolean; remaining: number; resetMs: number } {
+  const now = Date.now()
+  let bucket = rateBuckets.get(clientKey)
+
+  if (!bucket) {
+    bucket = { tokens: RATE_LIMIT_MAX_TOKENS, lastRefill: now }
+    rateBuckets.set(clientKey, bucket)
+  }
+
+  // Refill tokens based on elapsed time
+  const elapsed = now - bucket.lastRefill
+  const refill = Math.floor((elapsed / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_REFILL_RATE)
+  if (refill > 0) {
+    bucket.tokens = Math.min(RATE_LIMIT_MAX_TOKENS, bucket.tokens + refill)
+    bucket.lastRefill = now
+  }
+
+  const resetMs = RATE_LIMIT_WINDOW_MS - (now - bucket.lastRefill)
+
+  if (bucket.tokens > 0) {
+    bucket.tokens--
+    return { allowed: true, remaining: bucket.tokens, resetMs }
+  }
+
+  return { allowed: false, remaining: 0, resetMs }
 }
 
 /* ================================================================== */
@@ -461,6 +525,190 @@ const routes: Route[] = [
     },
   },
 
+  // ── Knowledge Graph ────────────────────────────────────────────────
+  {
+    method: "GET",
+    pattern: "/api/knowledge/graph",
+    permission: "notes:read",
+    handler: async (_req, res) => {
+      const graph = kb.buildKnowledgeGraph()
+      json(res, 200, { graph })
+    },
+  },
+  {
+    method: "GET",
+    pattern: "/api/knowledge/context",
+    permission: "notes:read",
+    handler: async (_req, res) => {
+      const context = kb.formatVaultAsContext()
+      json(res, 200, { context })
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/api/knowledge/search",
+    permission: "notes:read",
+    handler: async (req, res) => {
+      const body = await parseBody(req)
+      if (!body.query || typeof body.query !== "string") {
+        return json(res, 400, { error: "query is required" })
+      }
+      const chunks = kb.searchContextChunks(body.query, body.maxChunks || 10)
+      json(res, 200, { chunks })
+    },
+  },
+  {
+    method: "GET",
+    pattern: "/api/knowledge/export",
+    permission: "notes:read",
+    handler: async (_req, res) => {
+      const exported = kb.exportVault()
+      json(res, 200, exported)
+    },
+  },
+  {
+    method: "GET",
+    pattern: "/api/knowledge/note/:id/connections",
+    permission: "notes:read",
+    handler: async (_req, res, params) => {
+      const note = db.getNote(params.id) as any
+      if (!note) return json(res, 404, { error: "Note not found" })
+
+      const graph = kb.buildKnowledgeGraph()
+      const node = graph.nodes.find((n) => n.id === params.id)
+      const tags = db.getTagsForNote(params.id) as any[]
+
+      const relatedEdges = graph.edges.filter(
+        (e) => e.source === params.id || e.target === params.id
+      )
+
+      json(res, 200, {
+        note: { id: note.id, title: note.title },
+        tags: tags.map((t: any) => t.name),
+        outgoingLinks: node?.outgoingLinks || [],
+        incomingLinks: node?.incomingLinks || [],
+        linkCount: node?.linkCount || 0,
+        edges: relatedEdges,
+      })
+    },
+  },
+
+  // ── Cloud Agents ───────────────────────────────────────────────────
+  {
+    method: "GET",
+    pattern: "/api/agents",
+    permission: "*",
+    handler: async (_req, res) => {
+      const agents = cloudAgentManager.listAgents()
+      const statuses = cloudAgentManager.getStatuses()
+      json(res, 200, { agents, statuses })
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/api/agents",
+    permission: "*",
+    handler: async (req, res) => {
+      const body = await parseBody(req)
+      if (!body.type || typeof body.type !== "string") {
+        return json(res, 400, { error: "type is required (claude-code, gemini-cli, openai-codex, opencode, custom)" })
+      }
+      const agent = cloudAgentManager.registerAgent(body.type, body.config || {})
+      json(res, 201, { agent })
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/api/agents/:id/connect",
+    permission: "*",
+    handler: async (_req, res, params) => {
+      try {
+        await cloudAgentManager.connectAgent(params.id)
+        json(res, 200, { message: "Agent connected" })
+      } catch (err) {
+        json(res, 500, { error: `Failed to connect: ${err instanceof Error ? err.message : String(err)}` })
+      }
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/api/agents/:id/disconnect",
+    permission: "*",
+    handler: async (_req, res, params) => {
+      await cloudAgentManager.disconnectAgent(params.id)
+      json(res, 200, { message: "Agent disconnected" })
+    },
+  },
+  {
+    method: "DELETE",
+    pattern: "/api/agents/:id",
+    permission: "*",
+    handler: async (_req, res, params) => {
+      await cloudAgentManager.disconnectAgent(params.id)
+      cloudAgentManager.removeAgent(params.id)
+      json(res, 200, { message: "Agent removed" })
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/api/agents/:id/tokens",
+    permission: "*",
+    handler: async (req, res, params) => {
+      const body = await parseBody(req)
+      const result = cloudAgentManager.createAgentToken(
+        params.id,
+        body.name || "API Token",
+        body.permissions,
+        body.expiresAt,
+      )
+      if (!result) return json(res, 404, { error: "Agent not found" })
+      json(res, 201, { token: result.token, rawToken: result.rawToken })
+    },
+  },
+  {
+    method: "GET",
+    pattern: "/api/agents/:id/tokens",
+    permission: "*",
+    handler: async (_req, res, params) => {
+      const tokens = cloudAgentManager.getAgentTokens(params.id)
+      json(res, 200, { tokens })
+    },
+  },
+  {
+    method: "GET",
+    pattern: "/api/agents/:id/tools",
+    permission: "*",
+    handler: async (_req, res, params) => {
+      const tools = cloudAgentManager.getAgentTools(params.id)
+      json(res, 200, { tools })
+    },
+  },
+
+  // ── Docker MCP ─────────────────────────────────────────────────────
+  {
+    method: "GET",
+    pattern: "/api/docker/mcp/status",
+    permission: "*",
+    handler: async (_req, res) => {
+      // Report Docker MCP integration status
+      const agents = cloudAgentManager.listAgents()
+      const dockerAgents = agents.filter((a) => a.transport === "docker-mcp")
+      const statuses = cloudAgentManager.getStatuses()
+
+      json(res, 200, {
+        dockerMcpEnabled: dockerAgents.length > 0,
+        dockerAgents: dockerAgents.map((a) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          dockerImage: a.dockerImage,
+          dockerProfile: a.dockerProfile,
+          status: statuses.find((s) => s.agentId === a.id)?.status || "disconnected",
+        })),
+      })
+    },
+  },
+
   // ── Health ─────────────────────────────────────────────────────────
   {
     method: "GET",
@@ -469,8 +717,18 @@ const routes: Route[] = [
     handler: async (_req, res) => {
       json(res, 200, {
         status: "ok",
-        version: "1.0.0",
+        version: "2.0.0",
         timestamp: new Date().toISOString(),
+        capabilities: [
+          "notes", "tags", "folders", "tasks", "canvases",
+          "ai", "knowledge-graph", "cloud-agents", "docker-mcp",
+          "vault-export", "rag-search",
+        ],
+        mcp: {
+          server: "tesserin",
+          transport: ["stdio", "sse"],
+          dockerMcp: true,
+        },
       })
     },
   },
@@ -496,18 +754,49 @@ function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   const urlPath = (req.url || "/").split("?")[0]
   const method = (req.method || "GET").toUpperCase()
 
-  // Authenticate — require API key for all routes
+  // Authenticate — support both API keys (Bearer) and Agent tokens (Agent)
   const authHeader = req.headers.authorization || ""
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : ""
+  const isAgentToken = authHeader.startsWith("Agent ")
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : isAgentToken
+      ? authHeader.slice(6).trim()
+      : ""
 
   if (!token) {
-    json(res, 401, { error: "Missing API key. Use header: Authorization: Bearer <your-api-key>" })
+    json(res, 401, { error: "Missing authentication. Use header: Authorization: Bearer <api-key> or Authorization: Agent <agent-token>" })
     return
   }
 
-  const apiKey = verifyApiKey(token)
-  if (!apiKey) {
-    json(res, 401, { error: "Invalid or expired API key" })
+  // Try agent token first, then API key
+  let apiKey: ApiKey | null = null
+  let agentPermissions: string[] | null = null
+
+  if (isAgentToken) {
+    const verified = cloudAgentManager.verifyToken(token)
+    if (!verified) {
+      json(res, 401, { error: "Invalid or expired agent token" })
+      return
+    }
+    agentPermissions = verified.token.permissions
+  } else {
+    apiKey = verifyApiKey(token)
+    if (!apiKey) {
+      json(res, 401, { error: "Invalid or expired API key" })
+      return
+    }
+  }
+
+  // Rate limiting — use key prefix as client identifier
+  const clientId = isAgentToken ? `agent:${token.slice(0, 11)}` : `key:${apiKey?.prefix || token.slice(0, 11)}`
+  const rateCheck = checkRateLimit(clientId)
+  res.setHeader("X-RateLimit-Limit", String(RATE_LIMIT_MAX_TOKENS))
+  res.setHeader("X-RateLimit-Remaining", String(rateCheck.remaining))
+  res.setHeader("X-RateLimit-Reset", String(Math.ceil(rateCheck.resetMs / 1000)))
+
+  if (!rateCheck.allowed) {
+    res.setHeader("Retry-After", String(Math.ceil(rateCheck.resetMs / 1000)))
+    json(res, 429, { error: "Rate limit exceeded. Try again later.", retryAfter: Math.ceil(rateCheck.resetMs / 1000) })
     return
   }
 
@@ -517,14 +806,33 @@ function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
     const params = matchRoute(route.pattern, urlPath)
     if (!params) continue
 
-    // Check permissions
-    if (route.permission !== "*" && !hasPermission(apiKey, route.permission)) {
-      json(res, 403, { error: `Missing permission: ${route.permission}` })
-      return
+    // Check permissions (API key or agent token)
+    if (route.permission !== "*") {
+      if (apiKey && !hasPermission(apiKey, route.permission)) {
+        json(res, 403, { error: `Missing permission: ${route.permission}` })
+        return
+      }
+      if (agentPermissions && !agentPermissions.includes(route.permission) && !agentPermissions.includes("vault:full")) {
+        json(res, 403, { error: `Agent missing permission: ${route.permission}` })
+        return
+      }
     }
 
+    // Build a synthetic apiKey for compatibility with route handlers
+    const effectiveApiKey = apiKey || {
+      id: "agent",
+      name: "Agent Token",
+      key_hash: "",
+      prefix: "tat_",
+      permissions: JSON.stringify(agentPermissions || ["*"]),
+      created_at: new Date().toISOString(),
+      last_used_at: null,
+      expires_at: null,
+      is_revoked: 0,
+    } as ApiKey
+
     route
-      .handler(req, res, params, apiKey)
+      .handler(req, res, params, effectiveApiKey)
       .catch((err) => {
         console.error("[API] Handler error:", err)
         json(res, 500, { error: "Internal server error" })

@@ -171,6 +171,38 @@ const tesserinAPI = {
             status: () => electron_1.ipcRenderer.invoke('api:server:status'),
         },
     },
+    // ── Cloud Agents ──────────────────────────────────────────────────
+    agents: {
+        list: () => electron_1.ipcRenderer.invoke('agents:list'),
+        statuses: () => electron_1.ipcRenderer.invoke('agents:statuses'),
+        register: (type, config) => electron_1.ipcRenderer.invoke('agents:register', type, config),
+        update: (id, updates) => electron_1.ipcRenderer.invoke('agents:update', id, updates),
+        remove: (id) => electron_1.ipcRenderer.invoke('agents:remove', id),
+        connect: (id) => electron_1.ipcRenderer.invoke('agents:connect', id),
+        disconnect: (id) => electron_1.ipcRenderer.invoke('agents:disconnect', id),
+        callTool: (agentId, toolName, args) => electron_1.ipcRenderer.invoke('agents:callTool', agentId, toolName, args),
+        getTools: (agentId) => electron_1.ipcRenderer.invoke('agents:getTools', agentId),
+        createToken: (agentId, name, permissions, expiresAt) => electron_1.ipcRenderer.invoke('agents:createToken', agentId, name, permissions, expiresAt),
+        getTokens: (agentId) => electron_1.ipcRenderer.invoke('agents:getTokens', agentId),
+        revokeToken: (agentId, tokenId) => electron_1.ipcRenderer.invoke('agents:revokeToken', agentId, tokenId),
+    },
+    // ── Knowledge Base ────────────────────────────────────────────────
+    kb: {
+        graph: () => electron_1.ipcRenderer.invoke('kb:graph'),
+        export: () => electron_1.ipcRenderer.invoke('kb:export'),
+        search: (query, maxChunks) => electron_1.ipcRenderer.invoke('kb:search', query, maxChunks),
+        context: (maxNotes) => electron_1.ipcRenderer.invoke('kb:context', maxNotes),
+        noteConnections: (noteId) => electron_1.ipcRenderer.invoke('kb:noteConnections', noteId),
+    },
+    // ── Canvas Events ─────────────────────────────────────────────────
+    onCanvasUpdated: (callback) => {
+        const handler = (_e, canvasId) => callback(canvasId);
+        electron_1.ipcRenderer.on('canvas:updated', handler);
+        return handler;
+    },
+    offCanvasUpdated: (handler) => {
+        electron_1.ipcRenderer.removeListener('canvas:updated', handler);
+    },
 };
 electron_1.contextBridge.exposeInMainWorld('tesserin', tesserinAPI);
 //# sourceMappingURL=preload.js.map

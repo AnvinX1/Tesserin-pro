@@ -1,0 +1,64 @@
+{
+  "$schema": "https://docs.docker.com/ai/mcp-catalog-and-toolkit/schema.json",
+  "name": "tesserin",
+  "description": "Tesserin Knowledge Workspace — exposes vault notes, knowledge graph, tasks, and AI capabilities as MCP tools for external agents.",
+  "profiles": {
+    "default": {
+      "servers": {
+        "tesserin": {
+          "type": "local",
+          "command": "node",
+          "args": ["dist-electron/main.js", "--mcp"],
+          "description": "Tesserin vault MCP server — full access to notes, tags, tasks, folders, knowledge graph, and AI tools.",
+          "tools": [
+            "list_notes",
+            "get_note",
+            "search_notes",
+            "create_note",
+            "update_note",
+            "delete_note",
+            "get_note_by_title",
+            "list_tags",
+            "create_tag",
+            "add_tag_to_note",
+            "list_tasks",
+            "create_task",
+            "update_task",
+            "list_folders",
+            "create_folder",
+            "get_knowledge_graph",
+            "search_vault_context",
+            "get_vault_context",
+            "export_vault",
+            "get_note_with_connections",
+            "batch_create_notes"
+          ]
+        }
+      }
+    },
+    "readonly": {
+      "servers": {
+        "tesserin": {
+          "type": "local",
+          "command": "node",
+          "args": ["dist-electron/main.js", "--mcp"],
+          "description": "Tesserin vault read-only access — browse notes, search, and access knowledge graph.",
+          "tools": [
+            "list_notes",
+            "get_note",
+            "search_notes",
+            "get_note_by_title",
+            "list_tags",
+            "list_tasks",
+            "list_folders",
+            "get_knowledge_graph",
+            "search_vault_context",
+            "get_vault_context",
+            "export_vault",
+            "get_note_with_connections"
+          ]
+        }
+      }
+    }
+  }
+}

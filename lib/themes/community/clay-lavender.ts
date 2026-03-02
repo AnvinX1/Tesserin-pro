@@ -1,0 +1,46 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.clay-lavender",
+    name: "Clay Lavender",
+    author: "Tesserin Community",
+    description: "Squishy lavender clay UI — pillow-soft purple with inflated 3D-like elements.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#EDE4F5", "#8B5CF6", "#3B1F72"],
+    category: "clay",
+    downloads: 7800,
+    rating: 4.6,
+    colors: {
+      "--bg-app": "#EDE4F5",
+      "--bg-panel": "linear-gradient(145deg, #EDE4F5, #DDD0EA)",
+      "--bg-panel-inset": "#D5C8E2",
+      "--text-primary": "#3B1F72",
+      "--text-secondary": "#6D4EA0",
+      "--text-tertiary": "#9B84C0",
+      "--text-on-accent": "#FFFFFF",
+      "--accent-primary": "#8B5CF6",
+      "--accent-pressed": "#7C3AED",
+      "--border-light": "rgba(255, 255, 255, 0.55)",
+      "--border-dark": "rgba(59, 31, 114, 0.05)",
+      "--panel-outer-shadow": "8px 8px 20px rgba(139,92,246,0.12), -4px -4px 12px rgba(255,255,255,0.65), inset 0 2px 0 rgba(255,255,255,0.35)",
+      "--btn-shadow": "6px 6px 14px rgba(139,92,246,0.1), -3px -3px 10px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.3)",
+      "--input-inner-shadow": "inset 3px 3px 8px rgba(139,92,246,0.08), inset -2px -2px 6px rgba(255,255,255,0.55)",
+      "--graph-node": "#D1C4E9",
+      "--graph-link": "#B39DDB",
+      "--code-bg": "#DDD0EA",
+      "--tooltip-bg": "#4A2B8A",
+      "--tooltip-text": "#EDE4F5",
+      "--tooltip-border": "rgba(139, 92, 246, 0.2)",
+    },
+    styles: {
+      "--radius-panel": "24px",
+      "--radius-btn": "18px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-3px",
+      "--btn-active-press": "1px",
+      "--scrollbar-radius": "12px",
+    },
+  }
+
+export default theme

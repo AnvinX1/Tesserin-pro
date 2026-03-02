@@ -1,6 +1,8 @@
 <div align="center">
 
-# ✦ Tesserin
+<img src="build/tesserinmain.png" width="96" alt="Tesserin logo" />
+
+# Tesserin
 
 ### *Think deeper. Write freely.*
 

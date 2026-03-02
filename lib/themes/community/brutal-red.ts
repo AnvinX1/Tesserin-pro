@@ -1,0 +1,47 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.brutal-red",
+    name: "Brutal Red",
+    author: "Tesserin Community",
+    description: "Raw brutalist design — sharp black, white & red. No gradients, no fluff, just function.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#0A0A0A", "#FF0000", "#FFFFFF"],
+    category: "brutalism",
+    downloads: 11200,
+    rating: 4.7,
+    colors: {
+      "--bg-app": "#0A0A0A",
+      "--bg-panel": "#101010",
+      "--bg-panel-inset": "#000000",
+      "--text-primary": "#FFFFFF",
+      "--text-secondary": "#AAAAAA",
+      "--text-tertiary": "#666666",
+      "--text-on-accent": "#FFFFFF",
+      "--accent-primary": "#FF0000",
+      "--accent-pressed": "#CC0000",
+      "--border-light": "rgba(255, 0, 0, 0.15)",
+      "--border-dark": "rgba(255, 0, 0, 0.3)",
+      "--panel-outer-shadow": "4px 4px 0px #FF0000",
+      "--btn-shadow": "3px 3px 0px #FF0000",
+      "--input-inner-shadow": "inset 2px 2px 0px rgba(0,0,0,0.8)",
+      "--graph-node": "#FF0000",
+      "--graph-link": "#330000",
+      "--code-bg": "#050505",
+      "--tooltip-bg": "#FF0000",
+      "--tooltip-text": "#FFFFFF",
+      "--tooltip-border": "#FF0000",
+    },
+    styles: {
+      "--radius-panel": "0px",
+      "--radius-btn": "0px",
+      "--radius-inset": "0px",
+      "--border-width": "3px",
+      "--btn-hover-lift": "0px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "0px",
+    },
+  }
+
+export default theme

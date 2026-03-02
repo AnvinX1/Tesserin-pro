@@ -1,0 +1,46 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.clay-sand",
+    name: "Clay Sand",
+    author: "Tesserin Community",
+    description: "Soft clay-like surfaces in warm sand tones — puffy, rounded, and tactile.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#F5E6D3", "#D2691E", "#4A2C0A"],
+    category: "clay",
+    downloads: 8400,
+    rating: 4.5,
+    colors: {
+      "--bg-app": "#F5E6D3",
+      "--bg-panel": "linear-gradient(145deg, #F5E6D3, #E8D5BE)",
+      "--bg-panel-inset": "#E0CEAF",
+      "--text-primary": "#4A2C0A",
+      "--text-secondary": "#7A5C3A",
+      "--text-tertiary": "#A08060",
+      "--text-on-accent": "#F5E6D3",
+      "--accent-primary": "#D2691E",
+      "--accent-pressed": "#B85518",
+      "--border-light": "rgba(255, 255, 255, 0.5)",
+      "--border-dark": "rgba(74, 44, 10, 0.06)",
+      "--panel-outer-shadow": "8px 8px 20px rgba(160,128,96,0.2), -4px -4px 12px rgba(255,255,255,0.6), inset 0 2px 0 rgba(255,255,255,0.3)",
+      "--btn-shadow": "6px 6px 14px rgba(160,128,96,0.18), -3px -3px 10px rgba(255,255,255,0.55), inset 0 1px 0 rgba(255,255,255,0.25)",
+      "--input-inner-shadow": "inset 3px 3px 8px rgba(160,128,96,0.15), inset -2px -2px 6px rgba(255,255,255,0.5)",
+      "--graph-node": "#D5C4AA",
+      "--graph-link": "#C5B090",
+      "--code-bg": "#E8D5BE",
+      "--tooltip-bg": "#6B4226",
+      "--tooltip-text": "#F5E6D3",
+      "--tooltip-border": "rgba(255, 255, 255, 0.1)",
+    },
+    styles: {
+      "--radius-panel": "24px",
+      "--radius-btn": "18px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-3px",
+      "--btn-active-press": "1px",
+      "--scrollbar-radius": "12px",
+    },
+  }
+
+export default theme

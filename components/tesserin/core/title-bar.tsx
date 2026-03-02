@@ -1,6 +1,7 @@
 import React from "react"
 import { FiMinus, FiSquare, FiX } from "react-icons/fi"
 import { TesserinLogo } from "./tesserin-logo"
+import { AnimatedIcon } from "./animated-icon"
 
 /**
  * TitleBar
@@ -25,7 +26,9 @@ export function TitleBar() {
         >
             {/* Left: App title */}
             <div className="flex items-center gap-2 titlebar-no-drag">
-                <TesserinLogo size={18} animated={false} />
+                <AnimatedIcon animation="pulse" size={18}>
+                    <TesserinLogo size={18} animated={false} />
+                </AnimatedIcon>
                 <span
                     className="text-xs font-bold tracking-widest uppercase"
                     style={{ color: "var(--text-tertiary)" }}

@@ -1,11 +1,19 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FiFileText, FiCompass, FiSettings, FiChevronsRight, FiChevronsLeft } from "react-icons/fi"
-import { HiOutlineCpuChip, HiOutlineSparkles } from "react-icons/hi2"
 import { usePlugins } from "@/lib/plugin-system"
 import { SkeuoPanel } from "../core/skeuo-panel"
 import { TesserinLogo } from "../core/tesserin-logo"
+import { AnimatedIcon } from "../core/animated-icon"
+import {
+  ScribbledNotes,
+  ScribbledCanvas,
+  ScribbledGraph,
+  ScribbledSparkles,
+  ScribbledSettings,
+  ScribbledExpand,
+  ScribbledCollapse,
+} from "../core/scribbled-icons"
 import {
   Tooltip,
   TooltipTrigger,
@@ -21,12 +29,21 @@ import { getSetting } from "@/lib/storage-client"
  */
 
 /** Core tab definitions — always visible */
+/** Animation mode for each nav icon */
+const TAB_ANIM: Record<string, "bounce" | "wobble" | "pulse" | "morph"> = {
+  notes: "bounce",
+  canvas: "wobble",
+  graph: "pulse",
+  sam: "morph",
+  settings: "wobble",
+}
+
 const CORE_TABS = [
-  { id: "notes", icon: FiFileText, label: "Notes" },
-  { id: "canvas", icon: FiCompass, label: "Canvas" },
-  { id: "graph", icon: HiOutlineCpuChip, label: "Graph" },
-  { id: "sam", icon: HiOutlineSparkles, label: "SAM" },
-  { id: "settings", icon: FiSettings, label: "Settings" },
+  { id: "notes", icon: ScribbledNotes, label: "Notes" },
+  { id: "canvas", icon: ScribbledCanvas, label: "Canvas" },
+  { id: "graph", icon: ScribbledGraph, label: "Graph" },
+  { id: "sam", icon: ScribbledSparkles, label: "SAM" },
+  { id: "settings", icon: ScribbledSettings, label: "Settings" },
 ] as const
 
 export type CoreTabId = (typeof CORE_TABS)[number]["id"]
@@ -137,7 +154,9 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
                     aria-hidden="true"
                   />
                 )}
-                <item.icon size={20} className="flex-shrink-0" />
+                <AnimatedIcon animation={TAB_ANIM[item.id] || "bounce"} size={20}>
+                  <item.icon size={20} className="flex-shrink-0" />
+                </AnimatedIcon>
                 {expanded && (
                   <span
                     className="text-sm font-medium whitespace-nowrap overflow-hidden"
@@ -189,7 +208,9 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
               className="skeuo-btn w-full flex items-center gap-3 px-3.5 h-10 rounded-xl"
               aria-label="Collapse sidebar"
             >
-              <FiChevronsLeft size={18} className="flex-shrink-0" />
+              <AnimatedIcon animation="bounce" size={18}>
+                <ScribbledCollapse size={18} className="flex-shrink-0" />
+              </AnimatedIcon>
               <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
                 Collapse
               </span>
@@ -202,7 +223,9 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
                   className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-full mx-auto"
                   aria-label="Expand sidebar"
                 >
-                  <FiChevronsRight size={18} />
+                  <AnimatedIcon animation="bounce" size={18}>
+                    <ScribbledExpand size={18} />
+                  </AnimatedIcon>
                 </button>
               </TooltipTrigger>
               <TooltipContent

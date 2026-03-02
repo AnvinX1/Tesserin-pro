@@ -5,6 +5,7 @@ import { FiSearch, FiPlus, FiFileText, FiLink2, FiList, FiClock, FiX, FiFolder, 
 import { useNotes, parseWikiLinks, type Note, type NoteTag, type NoteFolder } from "@/lib/notes-store"
 import { SkeuoPanel } from "../core/skeuo-panel"
 import { TesserinLogo } from "../core/tesserin-logo"
+import { AnimatedIcon } from "../core/animated-icon"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -618,7 +619,9 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
       <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-2">
         {displayNotes.length === 0 && (
           <div className="text-center py-8 flex flex-col items-center gap-3">
-            <TesserinLogo size={32} animated={false} />
+            <AnimatedIcon animation="pulse" size={32} autoPlay>
+              <TesserinLogo size={32} animated={false} />
+            </AnimatedIcon>
             <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
               {search ? "No matching notes" : activeTagFilter ? "No notes with this tag" : "No notes yet"}
             </p>

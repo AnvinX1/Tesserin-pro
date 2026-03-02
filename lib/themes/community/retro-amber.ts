@@ -1,0 +1,48 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.retro-amber",
+    name: "Retro Amber",
+    author: "Tesserin Community",
+    description: "Vintage amber CRT terminal — warm phosphor glow on deep black. Pure nostalgia.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#0A0800", "#FFB000", "#FFD580"],
+    category: "retro",
+    downloads: 8300,
+    rating: 4.5,
+    colors: {
+      "--bg-app": "#0A0800",
+      "--bg-panel": "linear-gradient(145deg, #141000, #0A0800)",
+      "--bg-panel-inset": "#060400",
+      "--text-primary": "#FFD580",
+      "--text-secondary": "#CC9A40",
+      "--text-tertiary": "#806020",
+      "--text-on-accent": "#0A0800",
+      "--accent-primary": "#FFB000",
+      "--accent-pressed": "#E09000",
+      "--border-light": "rgba(255, 176, 0, 0.1)",
+      "--border-dark": "rgba(0, 0, 0, 0.6)",
+      "--panel-outer-shadow": "5px 5px 15px rgba(0,0,0,0.5), -1px -1px 4px #1A1400",
+      "--btn-shadow": "4px 4px 8px rgba(0,0,0,0.5), -1px -1px 3px #1A1400",
+      "--input-inner-shadow": "inset 2px 2px 5px rgba(0,0,0,0.5), inset -1px -1px 2px #141000",
+      "--graph-node": "#FFB000",
+      "--graph-link": "#332200",
+      "--code-bg": "#060400",
+      "--tooltip-bg": "#1A1400",
+      "--tooltip-text": "#FFD580",
+      "--tooltip-border": "rgba(255, 176, 0, 0.15)",
+    },
+    styles: {
+      "--radius-panel": "4px",
+      "--radius-btn": "3px",
+      "--radius-inset": "3px",
+      "--border-width": "2px",
+      "--btn-hover-lift": "-1px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "2px",
+      "--accent-glow": "0 0 8px rgba(255, 176, 0, 0.3)",
+    },
+  }
+
+export default theme

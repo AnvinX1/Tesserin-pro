@@ -6,10 +6,18 @@ import {
 } from "@excalidraw/excalidraw"
 import "@excalidraw/excalidraw/index.css"
 import { TesserinLogo } from "../core/tesserin-logo"
+import { TesseradrawLogo } from "./tesseradraw-logo"
+import { AnimatedIcon } from "../core/animated-icon"
+import { ScribbledPlus, ScribbledSearch, ScribbledZap } from "../core/scribbled-icons"
 import * as storage from "@/lib/storage-client"
 import { useTesserinTheme } from "@/components/tesserin/core/theme-provider"
 import { useNotes, type Note } from "@/lib/notes-store"
-import { FiFileText, FiSearch, FiX, FiPlus } from "react-icons/fi"
+import { useCanvasStore } from "@/lib/canvas-store"
+import { excalidrawId } from "@/lib/canvas-elements"
+import { generateDiagram, type DiagramType } from "@/lib/diagram-ai"
+import { CanvasTabBar } from "./canvas-tab-bar"
+import { CanvasAIDialog } from "./canvas-ai-dialog"
+import { FiFileText, FiX } from "react-icons/fi"
 
 /**
  * CreativeCanvas — Tesseradraw
@@ -21,8 +29,6 @@ import { FiFileText, FiSearch, FiX, FiPlus } from "react-icons/fi"
 const DARK_BG = "#121212"
 const LIGHT_BG = "#fdfbf7"
 
-/** Default canvas ID — a single persistent canvas (multi-canvas can be added later) */
-const DEFAULT_CANVAS_ID = "default-canvas"
 /** Storage key for library items across all sessions */
 const LIBRARY_STORAGE_KEY = "tesserin:canvas:library"
 
@@ -44,14 +50,6 @@ const PERSIST_APP_STATE_KEYS = [
 ] as const
 
 /* ── helpers ──────────────────────────────────────────── */
-
-/** Generate a random hex ID for Excalidraw elements */
-function excalidrawId(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  let id = ""
-  for (let i = 0; i < 21; i++) id += chars[Math.floor(Math.random() * chars.length)]
-  return id
-}
 
 /** Create Excalidraw elements representing a note card */
 function createNoteCardElements(note: Note, x: number, y: number, isDark: boolean) {
@@ -195,22 +193,28 @@ function NotePickerPanel({
 
   return (
     <div
-      className="absolute top-3 right-3 z-50 w-64 rounded-2xl overflow-hidden shadow-xl border"
-      style={{
-        backgroundColor: "var(--bg-panel)",
-        borderColor: "var(--border-dark)",
-      }}
+      className="skeuo-panel absolute top-3 right-3 z-50 w-64 overflow-hidden"
     >
-      <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--border-dark)" }}>
+      <div
+        className="px-3 py-2.5 flex items-center gap-2"
+        style={{
+          borderBottom: "1px solid var(--border-light)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
         <FiFileText size={14} style={{ color: "var(--accent-primary)" }} />
         <span className="text-xs font-bold flex-1" style={{ color: "var(--text-primary)" }}>Insert Note</span>
-        <button onClick={onClose} className="opacity-60 hover:opacity-100 transition-opacity">
-          <FiX size={14} style={{ color: "var(--text-secondary)" }} />
+        <button
+          onClick={onClose}
+          className="skeuo-btn flex items-center justify-center transition-all"
+          style={{ width: 22, height: 22, borderRadius: 7, color: "var(--text-secondary)" }}
+        >
+          <FiX size={11} />
         </button>
       </div>
-      <div className="px-2 py-1.5">
-        <div className="skeuo-inset flex items-center gap-1.5 px-2 py-1 rounded-lg">
-          <FiSearch size={12} style={{ color: "var(--text-tertiary)" }} />
+      <div className="px-2.5 py-2">
+        <div className="skeuo-inset flex items-center gap-2 px-2.5 py-1.5">
+          <ScribbledSearch size={12} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
           <input
             autoFocus
             value={search}
@@ -221,7 +225,7 @@ function NotePickerPanel({
           />
         </div>
       </div>
-      <div className="max-h-60 overflow-y-auto custom-scrollbar px-1.5 pb-1.5">
+      <div className="max-h-60 overflow-y-auto custom-scrollbar px-2 pb-2">
         {filtered.length === 0 && (
           <p className="text-[10px] text-center py-4" style={{ color: "var(--text-tertiary)" }}>
             No notes found
@@ -231,10 +235,19 @@ function NotePickerPanel({
           <button
             key={note.id}
             onClick={() => onInsert(note)}
-            className="w-full text-left px-2.5 py-2 rounded-xl mb-0.5 flex items-center gap-2 hover:opacity-80 transition-opacity"
-            style={{ color: "var(--text-primary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
+            className="w-full text-left px-2.5 py-2 mb-0.5 flex items-center gap-2 transition-all"
+            style={{
+              color: "var(--text-primary)",
+              borderRadius: "var(--radius-inset)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--bg-panel-inset)"
+              e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.boxShadow = "none"
+            }}
           >
             <FiFileText size={12} className="shrink-0" style={{ color: "var(--text-tertiary)" }} />
             <div className="flex-1 min-w-0">
@@ -249,7 +262,7 @@ function NotePickerPanel({
                 </div>
               )}
             </div>
-            <FiPlus size={12} className="shrink-0" style={{ color: "var(--text-tertiary)" }} />
+            <ScribbledPlus size={12} className="shrink-0" style={{ color: "var(--text-tertiary)" }} />
           </button>
         ))}
       </div>
@@ -262,14 +275,105 @@ function NotePickerPanel({
 export function CreativeCanvas() {
   const { isDark } = useTesserinTheme()
   const { notes } = useNotes()
+  const {
+    canvases,
+    activeCanvasId,
+    isLoading: canvasListLoading,
+    loadCanvases,
+    createCanvas,
+    deleteCanvas,
+    renameCanvas,
+    duplicateCanvas,
+    setActiveCanvas,
+    touchCanvas,
+  } = useCanvasStore()
   const apiRef = useRef<any>(null)
-  const canvasIdRef = useRef<string>(DEFAULT_CANVAS_ID)
+  const canvasIdRef = useRef<string | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [initialData, setInitialData] = useState<any | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  /** True while loading canvas data — shows a solid overlay so no blank/stale-scene flash */
+  const [isTransitioning, setIsTransitioning] = useState(true)
   const readyToSave = useRef(false)
+  /** Canvas scene queued when data loads before Excalidraw's onAPI fires (first-mount race) */
+  const pendingSceneRef = useRef<{ elements: any[]; appState: any; files?: any } | null>(null)
+  /** Library items read once on mount for Excalidraw's initialData (shared across canvases) */
+  const [libraryInitData] = useState<any[] | undefined>(() => {
+    try {
+      const raw = localStorage.getItem(LIBRARY_STORAGE_KEY)
+      return raw ? JSON.parse(raw) : undefined
+    } catch { return undefined }
+  })
   const [showNotePicker, setShowNotePicker] = useState(false)
   const insertCountRef = useRef(0)
+  const [showAIDialog, setShowAIDialog] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const aiInsertPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  // Load canvas list on mount
+  useEffect(() => {
+    loadCanvases()
+  }, [])
+
+  // Auto-select the most recently used canvas when the list loads and no canvas is active
+  useEffect(() => {
+    if (!activeCanvasId && canvases.length > 0 && !canvasListLoading) {
+      setActiveCanvas(canvases[0].id)
+    }
+  }, [canvases, activeCanvasId, canvasListLoading, setActiveCanvas])
+
+  // Listen for canvas:updated events from MCP/IPC
+  useEffect(() => {
+    const handler = (updatedId: string) => {
+      if (updatedId === canvasIdRef.current && apiRef.current) {
+        // Reload canvas data from storage and update scene
+        storage.getCanvas(updatedId).then((canvas) => {
+          if (!canvas) return
+          try {
+            const elements = canvas.elements ? JSON.parse(canvas.elements) : []
+            const files = canvas.files ? JSON.parse(canvas.files) : undefined
+            apiRef.current.updateScene({
+              elements,
+              ...(files ? { files } : {}),
+            })
+          } catch {}
+        })
+      }
+    }
+    if (typeof window !== "undefined" && window.tesserin?.onCanvasUpdated) {
+      window.tesserin.onCanvasUpdated(handler)
+    }
+    return () => {
+      if (typeof window !== "undefined" && window.tesserin?.offCanvasUpdated) {
+        window.tesserin.offCanvasUpdated(handler)
+      }
+    }
+  }, [])
+
+  /** Handle new canvas creation from tab bar */
+  const handleCreateCanvas = useCallback(async () => {
+    // Flush current canvas before switching
+    saveNowRef.current?.()
+    await createCanvas("Untitled Canvas")
+  }, [createCanvas])
+
+  /** Handle switching canvases */
+  const handleSelectCanvas = useCallback(
+    (id: string) => {
+      if (id === activeCanvasId) return
+      // Flush current canvas
+      saveNowRef.current?.()
+      setActiveCanvas(id)
+    },
+    [activeCanvasId, setActiveCanvas],
+  )
+
+  /** Handle closing a canvas tab (delete) */
+  const handleCloseCanvas = useCallback(
+    async (id: string) => {
+      await deleteCanvas(id)
+    },
+    [deleteCanvas],
+  )
 
   /** Insert a note as a card onto the canvas */
   const handleInsertNote = useCallback(
@@ -296,37 +400,35 @@ export function CreativeCanvas() {
     [isDark],
   )
 
-  // ── Load canvas from SQLite (or localStorage fallback) on mount ─
+  // ── Load canvas from SQLite (or localStorage fallback) when activeCanvasId changes ─
+  // Uses updateScene() after Excalidraw mounts so it never remounts on canvas switches.
+  // This eliminates the "blank flash" and "stuck" behaviour between canvas tabs.
   useEffect(() => {
+    if (!activeCanvasId) {
+      setIsTransitioning(false)
+      readyToSave.current = false
+      return
+    }
+
     let cancelled = false
+    setIsTransitioning(true)
+    readyToSave.current = false
 
     async function loadCanvas() {
-      let canvasData: { elements: any[]; appState: Record<string, any>; files?: any; libraryItems?: any[] } | null = null
-      let libraryItems: any[] = []
+      let elements: any[] = []
+      let appState: Record<string, any> = { theme: isDark ? "dark" : "light" }
+      let files: any | undefined
 
       try {
-        // Load library items independently
-        try {
-          const libRaw = localStorage.getItem(LIBRARY_STORAGE_KEY)
-          if (libRaw) libraryItems = JSON.parse(libRaw)
-        } catch { }
         // Try storage API first (SQLite via IPC or localStorage fallback)
-        let canvas = await storage.getCanvas(DEFAULT_CANVAS_ID)
+        let canvas = await storage.getCanvas(activeCanvasId!)
 
         // Also check raw localStorage as a secondary source
         if (!canvas) {
           try {
-            const lsRaw = localStorage.getItem(`tesserin:canvas:${DEFAULT_CANVAS_ID}`)
+            const lsRaw = localStorage.getItem(`tesserin:canvas:${activeCanvasId}`)
             if (lsRaw) canvas = JSON.parse(lsRaw)
           } catch { }
-        }
-
-        if (!canvas) {
-          // Create a new default canvas
-          canvas = await storage.createCanvas({
-            id: DEFAULT_CANVAS_ID,
-            name: "Default Canvas",
-          })
         }
 
         if (canvas?.id) {
@@ -334,49 +436,38 @@ export function CreativeCanvas() {
         }
 
         if (canvas) {
-          const elements = canvas.elements ? JSON.parse(canvas.elements) : []
-          const appState = canvas.app_state ? JSON.parse(canvas.app_state) : {}
-          const files = canvas.files ? JSON.parse(canvas.files) : undefined
-
-          if (elements.length > 0) {
-            canvasData = {
-              elements,
-              appState: {
-                ...appState,
-                theme: isDark ? "dark" : "light",
-              },
-              files: files && Object.keys(files).length > 0 ? files : undefined,
-              libraryItems: libraryItems.length > 0 ? libraryItems : undefined,
-            }
-          }
+          elements = canvas.elements ? JSON.parse(canvas.elements) : []
+          const savedState = canvas.app_state ? JSON.parse(canvas.app_state) : {}
+          // Restore persisted appState (incl. viewBackgroundColor) but keep theme in sync
+          appState = { ...savedState, theme: isDark ? "dark" : "light" }
+          const parsedFiles = canvas.files ? JSON.parse(canvas.files) : undefined
+          if (parsedFiles && Object.keys(parsedFiles).length > 0) files = parsedFiles
         }
       } catch (err) {
         console.warn("[Tesserin] Failed to load canvas from DB:", err)
       }
 
-      if (!cancelled) {
-        if (canvasData) {
-          setInitialData(canvasData)
-        } else {
-          setInitialData({
-            elements: [],
-            appState: { theme: isDark ? "dark" : "light" },
-            libraryItems: libraryItems.length > 0 ? libraryItems : undefined,
-          })
-        }
-        setIsLoaded(true)
-        // Allow saving after initial scene-load onChange calls settle
-        setTimeout(() => {
-          readyToSave.current = true
-        }, 800)
+      if (cancelled) return
+
+      canvasIdRef.current = activeCanvasId!
+      const sceneData = { elements, appState, ...(files ? { files } : {}) }
+
+      if (apiRef.current) {
+        // Excalidraw already mounted — swap scene without remounting (zero flicker)
+        apiRef.current.updateScene(sceneData)
+        setIsTransitioning(false)
+      } else {
+        // Excalidraw not yet mounted on first render — queue for onAPI
+        pendingSceneRef.current = sceneData
+        // overlay stays until onAPI processes pendingSceneRef
       }
+
+      setTimeout(() => { readyToSave.current = true }, 800)
     }
     loadCanvas()
 
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    return () => { cancelled = true }
+  }, [activeCanvasId])
 
   // ── Immediate save helper (non-debounced) ──────────────────────
   const saveNow = useCallback(() => {
@@ -393,6 +484,7 @@ export function CreativeCanvas() {
 
       // Synchronous localStorage write for immediate persistence
       const canvasId = canvasIdRef.current
+      if (!canvasId) return
       const elementsJson = JSON.stringify(elements)
       const appStateJson = JSON.stringify(persistAppState)
 
@@ -402,7 +494,7 @@ export function CreativeCanvas() {
         const existing = localStorage.getItem(lsKey)
         const canvas = existing ? JSON.parse(existing) : {
           id: canvasId,
-          name: "Default Canvas",
+          name: "Canvas",
           files: "{}",
           created_at: new Date().toISOString(),
         }
@@ -417,8 +509,15 @@ export function CreativeCanvas() {
         elements: elementsJson,
         appState: appStateJson,
       }).catch(() => { })
+
+      // Bump updated time in canvas list
+      touchCanvas(canvasId)
     } catch { }
-  }, [])
+  }, [touchCanvas])
+
+  // Keep saveNow accessible from callbacks that close over old state
+  const saveNowRef = useRef(saveNow)
+  useEffect(() => { saveNowRef.current = saveNow }, [saveNow])
 
   // ── Debounced save ────────────────────────────────────────────
   const doSave = useCallback(
@@ -436,6 +535,7 @@ export function CreativeCanvas() {
           const elementsJson = JSON.stringify(elements)
           const appStateJson = JSON.stringify(persistAppState)
           const canvasId = canvasIdRef.current
+          if (!canvasId) return
 
           // Write to localStorage synchronously as backup
           try {
@@ -443,7 +543,7 @@ export function CreativeCanvas() {
             const existing = localStorage.getItem(lsKey)
             const canvas = existing ? JSON.parse(existing) : {
               id: canvasId,
-              name: "Default Canvas",
+              name: "Canvas",
               files: "{}",
               created_at: new Date().toISOString(),
             }
@@ -502,6 +602,13 @@ export function CreativeCanvas() {
 
   const onAPI = useCallback((api: any) => {
     apiRef.current = api
+    // If canvas data finished loading before Excalidraw was ready, apply it now
+    if (pendingSceneRef.current) {
+      api.updateScene(pendingSceneRef.current)
+      pendingSceneRef.current = null
+      setIsTransitioning(false)
+      setTimeout(() => { readyToSave.current = true }, 800)
+    }
   }, [])
 
   // Excalidraw onChange receives (elements, appState, files)
@@ -531,6 +638,60 @@ export function CreativeCanvas() {
       apiRef.current.updateScene({ appState: { theme: isDark ? "dark" : "light" } })
     }
   }, [isDark])
+
+  // ── Right-click context menu for AI diagram generation ─────────
+  const handleCanvasContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      // Only show custom context menu on canvas background (not Excalidraw UI)
+      const target = e.target as HTMLElement
+      if (target.closest(".excalidraw") && target.tagName === "CANVAS") {
+        e.preventDefault()
+        setContextMenuPos({ x: e.clientX, y: e.clientY })
+
+        // Compute canvas coordinates for element insertion
+        const api = apiRef.current
+        if (api) {
+          const appState = api.getAppState()
+          const canvasX = (e.clientX - (appState.offsetLeft || 0)) / (appState.zoom?.value || 1) - (appState.scrollX || 0)
+          const canvasY = (e.clientY - (appState.offsetTop || 0)) / (appState.zoom?.value || 1) - (appState.scrollY || 0)
+          aiInsertPos.current = { x: canvasX, y: canvasY }
+        }
+      }
+    },
+    [],
+  )
+
+  // Close context menu on any click
+  useEffect(() => {
+    if (!contextMenuPos) return
+    const handler = () => setContextMenuPos(null)
+    window.addEventListener("click", handler)
+    return () => window.removeEventListener("click", handler)
+  }, [contextMenuPos])
+
+  // ── AI diagram generation handler ─────────────────────────────
+  const handleAIGenerate = useCallback(
+    async (prompt: string, type: DiagramType) => {
+      setIsGenerating(true)
+      try {
+        const result = await generateDiagram(prompt, type, aiInsertPos.current, isDark)
+        const api = apiRef.current
+        if (api && result.elements.length > 0) {
+          const existing = api.getSceneElements()
+          api.updateScene({ elements: [...existing, ...result.elements] })
+          // Trigger save
+          readyToSave.current && saveNowRef.current?.()
+        }
+        setShowAIDialog(false)
+      } catch (err) {
+        console.error("[Tesseradraw] AI generation failed:", err)
+        // Keep dialog open so user can retry
+      } finally {
+        setIsGenerating(false)
+      }
+    },
+    [isDark],
+  )
 
   /* ── Tesserin-branded CSS overrides for Excalidraw UI chrome ── */
   const brandCSS = `
@@ -774,42 +935,96 @@ export function CreativeCanvas() {
   `
 
   /* ── render ───────────────────────────────────────────── */
-  if (!isLoaded) {
+
+  // Empty state — no canvases exist yet
+  if (!canvasListLoading && canvases.length === 0 && !activeCanvasId) {
     return (
-      <div className="w-full h-full flex items-center justify-center" style={{ background: isDark ? DARK_BG : LIGHT_BG }}>
-        <TesserinLogo size={48} animated />
+      <div
+        className="w-full h-full flex items-center justify-center"
+        style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
+      >
+        <div
+          className="skeuo-panel flex flex-col items-center gap-6 text-center px-12 py-10"
+        >
+          <TesseradrawLogo size={80} animated />
+          <div>
+            <h2
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                fontSize: "2rem",
+                fontWeight: 400,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Tesseradraw
+            </h2>
+            <p
+              className="mt-1.5"
+              style={{
+                fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                fontSize: "0.9rem",
+                color: "var(--text-tertiary)",
+              }}
+            >
+              AI-Enhanced Creative Canvas
+            </p>
+          </div>
+          <button
+            onClick={handleCreateCanvas}
+            className="flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all"
+            style={{
+              backgroundColor: "var(--accent-primary)",
+              color: "var(--text-on-accent)",
+              borderRadius: "var(--radius-btn)",
+              boxShadow: "var(--btn-shadow), 0 0 16px rgba(250,204,21,0.25)",
+              border: "1px solid var(--border-light)",
+            }}
+          >
+            <ScribbledPlus size={16} />
+            Create your first canvas
+          </button>
+          <p
+            className="text-[10px]"
+            style={{ color: "var(--text-tertiary)", opacity: 0.6 }}
+          >
+            Right-click canvas to generate diagrams with AI
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={`w-full h-full relative ${!isDark ? 'tesserin-canvas-light' : ''}`}>
+    <div
+      className={`w-full h-full flex flex-col relative ${!isDark ? 'tesserin-canvas-light' : ''}`}
+      style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
+    >
       <style>{brandCSS}</style>
-      {/* Insert Note button */}
-      <button
-        onClick={() => setShowNotePicker(!showNotePicker)}
-        className="absolute top-3 right-3 z-40 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-lg transition-all hover:scale-105"
-        style={{
-          backgroundColor: "var(--accent-primary)",
-          color: "#000",
-          display: showNotePicker ? "none" : "flex",
-        }}
-        aria-label="Insert note onto canvas"
+
+      {/* Canvas Tab Bar */}
+      <CanvasTabBar
+        canvases={canvases}
+        activeCanvasId={activeCanvasId}
+        onSelect={handleSelectCanvas}
+        onCreate={handleCreateCanvas}
+        onClose={handleCloseCanvas}
+        onRename={renameCanvas}
+        onDuplicate={duplicateCanvas}
+        onDelete={deleteCanvas}
+      />
+
+      {/* Canvas area */}
+      <div
+        className="flex-1 relative min-h-0"
+        onContextMenu={handleCanvasContextMenu}
       >
-        <FiFileText size={13} />
-        Insert Note
-      </button>
-      {/* Note picker panel */}
-      {showNotePicker && (
-        <NotePickerPanel
-          notes={notes}
-          onInsert={handleInsertNote}
-          onClose={() => setShowNotePicker(false)}
-        />
-      )}
+      {/* Excalidraw is always mounted — canvas switches use updateScene() so it never
+          remounts. This eliminates the blank-flash / stuck behaviour between tabs. */}
       <Excalidraw
+        key="tesserin-excalidraw"
         excalidrawAPI={onAPI}
-        initialData={initialData || undefined}
+        initialData={libraryInitData ? { elements: [], appState: { theme: isDark ? "dark" : "light" }, libraryItems: libraryInitData } : undefined}
         onChange={onChange}
         onLibraryChange={onLibraryChange}
         UIOptions={{
@@ -836,18 +1051,118 @@ export function CreativeCanvas() {
           <WelcomeScreen.Hints.ToolbarHint />
           <WelcomeScreen.Center>
             <div className="flex flex-col items-center justify-center pointer-events-none select-none">
-              <TesserinLogo size={64} animated />
+              <TesseradrawLogo size={72} animated />
               <h1
-                className="text-3xl font-bold mt-4 tracking-tight"
-                style={{ color: "var(--text-primary)" }}
+                className="mt-4"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "2.5rem",
+                  fontWeight: 400,
+                  letterSpacing: "-0.01em",
+                }}
               >
                 Tesseradraw
               </h1>
-              <p className="text-sm opacity-60 mt-2">AI-Enhanced Creative Canvas</p>
+              <p
+                className="mt-1"
+                style={{
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "0.95rem",
+                  opacity: 0.45,
+                  fontWeight: 400,
+                }}
+              >
+                AI-Enhanced Creative Canvas
+              </p>
             </div>
           </WelcomeScreen.Center>
         </WelcomeScreen>
       </Excalidraw>
+      {/* Insert Note button — shown when canvas is ready */}
+      {!isTransitioning && activeCanvasId && !showNotePicker && (
+        <button
+          onClick={() => setShowNotePicker(true)}
+          className="skeuo-btn absolute top-3 right-3 z-40 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold transition-all"
+          style={{
+            color: "var(--accent-primary)",
+            borderRadius: "var(--radius-btn)",
+          }}
+          aria-label="Insert note onto canvas"
+        >
+          <FiFileText size={13} />
+          Insert Note
+        </button>
+      )}
+      {showNotePicker && (
+        <NotePickerPanel
+          notes={notes}
+          onInsert={handleInsertNote}
+          onClose={() => setShowNotePicker(false)}
+        />
+      )}
+      {/* Canvas-switch overlay — solid cover during data load, removed once scene is ready */}
+      {isTransitioning && activeCanvasId && (
+        <div
+          className="absolute inset-0 z-30"
+          style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
+        />
+      )}
+
+      {/* Right-click context menu — neumorphic popover */}
+      {contextMenuPos && (
+        <div
+          className="skeuo-panel fixed z-[200] py-2 min-w-[200px]"
+          style={{
+            left: contextMenuPos.x,
+            top: contextMenuPos.y,
+            borderRadius: "var(--radius-inset)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold transition-all"
+            style={{ color: "var(--accent-primary)", borderRadius: 8 }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--bg-panel-inset)"
+              e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.boxShadow = "none"
+            }}
+            onClick={() => {
+              setContextMenuPos(null)
+              setShowAIDialog(true)
+            }}
+          >
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 7,
+                background: "var(--accent-primary)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 8px rgba(250,204,21,0.3)",
+              }}
+            >
+              <ScribbledZap size={11} style={{ color: "var(--text-on-accent)" }} />
+            </div>
+            Generate Diagram with AI
+          </button>
+        </div>
+      )}
+      </div>
+
+      {/* AI Dialog */}
+      <CanvasAIDialog
+        isOpen={showAIDialog}
+        onClose={() => setShowAIDialog(false)}
+        onGenerate={handleAIGenerate}
+        isGenerating={isGenerating}
+      />
     </div>
   )
 }

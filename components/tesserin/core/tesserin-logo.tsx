@@ -1,28 +1,59 @@
 "use client"
 
+import React, { useEffect } from "react"
+
+/* ── Global style injection (once) ─── */
+let logoStylesInjected = false
+
+function ensureLogoStyles() {
+  if (logoStylesInjected) return
+  if (typeof document === "undefined") return
+  logoStylesInjected = true
+
+  const style = document.createElement("style")
+  style.setAttribute("data-tess-logo", "1")
+  style.textContent = `
+    @keyframes tess-logo-breathe {
+      0%, 100% { filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.3)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.6)); transform: scale(1.03); }
+    }
+    @keyframes tess-logo-draw {
+      0% { stroke-dashoffset: 310; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes tesseradraw-breathe {
+      0%, 100% { filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.3)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.6)); transform: scale(1.03); }
+    }
+    @keyframes tesseradraw-draw {
+      0% { stroke-dashoffset: 310; }
+      100% { stroke-dashoffset: 0; }
+    }
+  `
+  document.head.appendChild(style)
+}
+
 /**
- * TesserinLogo – The Hyper-Crystal Brand Mark
+ * TesserinLogo – Hand-drawn / scribbled SVG brand mark
  *
- * An SVG-based, animated crystal logo for the Tesserin design system.
- * Features counter-rotating geometric shards with a glowing central core.
+ * A rough-stroked tesseract crystal with sketchy geometry,
+ * matching the hand-drawn aesthetic throughout the app.
  *
- * @param size     - Pixel dimension (width & height) of the logo container. Default `48`.
- * @param animated - When `true`, enables perpetual rotation animation. Default `false`.
- *
- * @example
- * ```tsx
- * <TesserinLogo size={64} animated />
- * ```
+ * @param size     - Pixel dimension (width & height). Default `48`.
+ * @param animated - Enable a breathing glow + stroke draw-on. Default `false`.
  */
 
 interface TesserinLogoProps {
-  /** Pixel dimension (width & height) of the logo. */
   size?: number
-  /** Enable continuous rotation animation. */
   animated?: boolean
 }
 
 export function TesserinLogo({ size = 48, animated = false }: TesserinLogoProps) {
+  const stroke = "var(--accent-primary)"
+  const textFill = "var(--text-primary)"
+
+  useEffect(() => { ensureLogoStyles() }, [])
+
   return (
     <div
       className="relative flex items-center justify-center"
@@ -32,58 +63,82 @@ export function TesserinLogo({ size = 48, animated = false }: TesserinLogoProps)
     >
       <svg
         viewBox="0 0 100 100"
-        className={`w-full h-full ${animated ? "animate-spin" : ""}`}
-        style={{ animationDuration: "30s" }}
+        width={size}
+        height={size}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={animated ? { animation: "tess-logo-breathe 3s ease-in-out infinite" } : undefined}
       >
-        <defs>
-          <filter id="crystal-glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <linearGradient id="shard-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--text-primary)" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="var(--text-tertiary)" stopOpacity="0.4" />
-          </linearGradient>
-        </defs>
+        {/* Outer rough circle — hand-drawn wobble */}
+        <path
+          d="M50 6 C72 4, 92 20, 95 42 C98 64, 84 88, 60 95 C36 102, 10 86, 5 62 C0 38, 18 8, 50 6Z"
+          stroke={stroke}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          opacity="0.35"
+          style={{
+            strokeDasharray: animated ? "310" : "none",
+            strokeDashoffset: animated ? "0" : "0",
+            ...(animated ? { animation: "tess-logo-draw 2s ease-out forwards" } : {}),
+          }}
+        />
 
-        {/* Geometric shards */}
-        <g transform="translate(50,50)">
-          {/* Outer counter-rotating pair */}
-          <g
-            style={{
-              animation: animated ? "animate-spin-reverse 20s linear infinite" : "none",
-            }}
-          >
-            <path
-              d="M-20 -30 L0 -45 L20 -30 L0 -10 Z"
-              fill="url(#shard-gradient)"
-              stroke="var(--border-dark)"
-              strokeWidth="0.5"
-            />
-            <path
-              d="M-20 30 L0 45 L20 30 L0 10 Z"
-              fill="url(#shard-gradient)"
-              stroke="var(--border-dark)"
-              strokeWidth="0.5"
-            />
-          </g>
+        {/* Inner rough diamond / tesseract shape — hand-sketched */}
+        <path
+          d="M50 18 L78 40 L68 72 L32 72 L22 40 Z"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          opacity="0.7"
+        />
 
-          {/* Inner slow-rotating accent shards */}
-          <g
-            className={animated ? "animate-spin" : ""}
-            style={{ animationDuration: "15s" }}
-          >
-            <path d="M-35 0 L-15 -10 L-15 10 Z" fill="var(--accent-primary)" opacity="0.8" />
-            <path d="M35 0 L15 -10 L15 10 Z" fill="var(--accent-primary)" opacity="0.8" />
-          </g>
+        {/* Inner smaller shape offset — depth illusion */}
+        <path
+          d="M50 28 L70 44 L62 66 L38 66 L30 44 Z"
+          stroke={stroke}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          opacity="0.3"
+        />
 
-          {/* Central glowing core */}
-          <circle r="6" fill="var(--accent-primary)" filter="url(#crystal-glow)" />
-          <circle r="3" fill="#ffffff" />
-        </g>
+        {/* Cross-connecting sketchy lines — tesseract edges */}
+        <line x1="50" y1="18" x2="50" y2="28" stroke={stroke} strokeWidth="1.8" opacity="0.5" strokeLinecap="round" />
+        <line x1="78" y1="40" x2="70" y2="44" stroke={stroke} strokeWidth="1.8" opacity="0.5" strokeLinecap="round" />
+        <line x1="68" y1="72" x2="62" y2="66" stroke={stroke} strokeWidth="1.8" opacity="0.5" strokeLinecap="round" />
+        <line x1="32" y1="72" x2="38" y2="66" stroke={stroke} strokeWidth="1.8" opacity="0.5" strokeLinecap="round" />
+        <line x1="22" y1="40" x2="30" y2="44" stroke={stroke} strokeWidth="1.8" opacity="0.5" strokeLinecap="round" />
+
+        {/* Center crystal facet accent */}
+        <path
+          d="M50 38 L58 48 L50 58 L42 48 Z"
+          stroke={stroke}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill={stroke}
+          opacity="0.15"
+        />
+
+        {/* Small scribble decoration — top left (hand-drawn feel) */}
+        <path
+          d="M15 20 Q18 16, 22 19 Q19 22, 15 20"
+          stroke={stroke}
+          strokeWidth="1.2"
+          fill="none"
+          opacity="0.4"
+          strokeLinecap="round"
+        />
+
+        {/* Sparkle dots — brand accent */}
+        <circle cx="82" cy="22" r="1.5" fill={stroke} opacity="0.6" />
+        <circle cx="86" cy="18" r="1" fill={stroke} opacity="0.4" />
+        <circle cx="80" cy="16" r="1" fill={stroke} opacity="0.3" />
       </svg>
     </div>
   )

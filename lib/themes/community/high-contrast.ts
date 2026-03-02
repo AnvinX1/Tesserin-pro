@@ -1,0 +1,47 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.high-contrast",
+    name: "High Contrast",
+    author: "Tesserin Community",
+    description: "Maximum contrast accessibility theme — WCAG AAA compliant, bold and readable.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#000000", "#FFFF00", "#FFFFFF"],
+    category: "monochrome",
+    downloads: 6200,
+    rating: 4.3,
+    colors: {
+      "--bg-app": "#000000",
+      "--bg-panel": "#0A0A0A",
+      "--bg-panel-inset": "#000000",
+      "--text-primary": "#FFFFFF",
+      "--text-secondary": "#E0E0E0",
+      "--text-tertiary": "#BBBBBB",
+      "--text-on-accent": "#000000",
+      "--accent-primary": "#FFFF00",
+      "--accent-pressed": "#FFD700",
+      "--border-light": "#FFFFFF",
+      "--border-dark": "#FFFFFF",
+      "--panel-outer-shadow": "0 0 0 2px #FFFFFF",
+      "--btn-shadow": "0 0 0 2px #FFFFFF",
+      "--input-inner-shadow": "inset 0 0 0 2px #666666",
+      "--graph-node": "#FFFF00",
+      "--graph-link": "#888888",
+      "--code-bg": "#0A0A0A",
+      "--tooltip-bg": "#FFFF00",
+      "--tooltip-text": "#000000",
+      "--tooltip-border": "#FFFF00",
+    },
+    styles: {
+      "--radius-panel": "0px",
+      "--radius-btn": "0px",
+      "--radius-inset": "0px",
+      "--border-width": "3px",
+      "--btn-hover-lift": "0px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "0px",
+    },
+  }
+
+export default theme

@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.mono-ink",
+    name: "Mono Ink",
+    author: "Tesserin Community",
+    description: "Pure black-and-white monochrome — stark, distraction-free writing. No color, only contrast.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#000000", "#FFFFFF", "#CCCCCC"],
+    category: "monochrome",
+    downloads: 9400,
+    rating: 4.6,
+    colors: {
+      "--bg-app": "#000000",
+      "--bg-panel": "linear-gradient(145deg, #0A0A0A, #000000)",
+      "--bg-panel-inset": "#050505",
+      "--text-primary": "#FFFFFF",
+      "--text-secondary": "#999999",
+      "--text-tertiary": "#555555",
+      "--text-on-accent": "#000000",
+      "--accent-primary": "#FFFFFF",
+      "--accent-pressed": "#CCCCCC",
+      "--border-light": "rgba(255, 255, 255, 0.08)",
+      "--border-dark": "rgba(0, 0, 0, 0.9)",
+      "--panel-outer-shadow": "5px 5px 15px #000000, -1px -1px 4px #1a1a1a",
+      "--btn-shadow": "4px 4px 8px #000000, -1px -1px 3px #1a1a1a",
+      "--input-inner-shadow": "inset 2px 2px 5px #000000, inset -1px -1px 2px #111111",
+      "--graph-node": "#333333",
+      "--graph-link": "#222222",
+      "--code-bg": "#050505",
+      "--tooltip-bg": "#1a1a1a",
+      "--tooltip-text": "#FFFFFF",
+      "--tooltip-border": "rgba(255, 255, 255, 0.1)",
+    },
+    styles: {
+      "--radius-panel": "12px",
+      "--radius-btn": "8px",
+      "--radius-inset": "8px",
+      "--btn-hover-lift": "-1px",
+      "--scrollbar-radius": "6px",
+    },
+  }
+
+export default theme

@@ -1,7 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useCallback, useState, useEffect, useRef } from "react"
-import { getSetting, setSetting } from "@/lib/storage-client"/**
+import { getSetting, setSetting } from "@/lib/storage-client"
+import { getThemeById, generateThemeCSS, getActiveThemeId } from "@/lib/theme-store"/**
  * TesserinThemeContext
  *
  * Provides a centralized, reactive theme toggle for the Tesserin
@@ -38,7 +39,21 @@ export const useTesserinTheme = () => useContext(ThemeContext)
 /* ------------------------------------------------------------------ */
 
 const THEME_STYLES = `
-  :root { --transition-speed: 0.4s; }
+  :root {
+    --transition-speed: 0.4s;
+    /* Structural defaults — overridden by custom themes */
+    --radius-panel: 20px;
+    --radius-btn: 14px;
+    --radius-inset: 14px;
+    --border-width: 1px;
+    --backdrop-blur: none;
+    --btn-hover-lift: -2px;
+    --btn-active-press: 1px;
+    --panel-border-bottom: var(--border-dark);
+    --inset-border-bottom: rgba(255,255,255,0.5);
+    --scrollbar-radius: 10px;
+    --accent-glow: none;
+  }
 
   .theme-dark {
     /* OBSIDIAN BLACK PALETTE */
@@ -101,24 +116,28 @@ const THEME_STYLES = `
   }
 
   /* ------------------------------------------------------------------ */
-  /*  Skeuomorphic utility classes                                       */
+  /*  Skeuomorphic utility classes (use CSS custom properties)           */
   /* ------------------------------------------------------------------ */
 
   .skeuo-panel {
     background: var(--bg-panel);
     box-shadow: var(--panel-outer-shadow);
-    border: 1px solid var(--border-light);
-    border-bottom-color: var(--border-dark);
-    border-radius: 20px;
+    border: var(--border-width) solid var(--border-light);
+    border-bottom-color: var(--panel-border-bottom);
+    border-radius: var(--radius-panel);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
     transition: all var(--transition-speed);
   }
 
   .skeuo-inset {
     background: var(--bg-panel-inset);
     box-shadow: var(--input-inner-shadow);
-    border-radius: 14px;
-    border: 1px solid transparent;
-    border-bottom-color: rgba(255,255,255,0.5);
+    border-radius: var(--radius-inset);
+    border: var(--border-width) solid transparent;
+    border-bottom-color: var(--inset-border-bottom);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
     transition: all var(--transition-speed);
   }
 
@@ -127,22 +146,24 @@ const THEME_STYLES = `
     box-shadow: var(--btn-shadow);
     color: var(--text-secondary);
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid var(--border-light);
-    border-bottom-color: var(--border-dark);
-    border-radius: 14px;
+    border: var(--border-width) solid var(--border-light);
+    border-bottom-color: var(--panel-border-bottom);
+    border-radius: var(--radius-btn);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
     cursor: pointer;
   }
 
   .skeuo-btn:active, .skeuo-btn.active {
-    box-shadow: var(--input-inner-shadow);
+    box-shadow: var(--input-inner-shadow), var(--accent-glow);
     color: var(--text-on-accent);
     background: var(--accent-primary);
-    transform: translateY(1px);
+    transform: translateY(var(--btn-active-press));
     border-color: transparent;
   }
 
   .skeuo-btn:hover:not(.active):not(:active) {
-    transform: translateY(-2px);
+    transform: translateY(var(--btn-hover-lift));
     color: var(--text-primary);
   }
 
@@ -167,12 +188,6 @@ const THEME_STYLES = `
   .led-indicator.on {
     background-color: #22c55e;
     box-shadow: 0 0 8px #22c55e, inset 1px 1px 2px rgba(255,255,255,0.8);
-  }
-
-  /* Spin-reverse keyframe for the logo */
-  @keyframes animate-spin-reverse {
-    from { transform: rotate(360deg); }
-    to { transform: rotate(0deg); }
   }
 
   /* Loading bar animation */
@@ -216,6 +231,25 @@ const THEME_STYLES = `
   .text-\[9px\]  { font-size: 11px !important; }
   .text-\[10px\] { font-size: 12px !important; }
   .text-\[11px\] { font-size: 13px !important; }
+
+  /* ── Pane header — glassmorphic compact bar ─────────────── */
+  .pane-header {
+    background: color-mix(in srgb, var(--bg-panel-flat, var(--bg-panel)) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* ── Editor prose typography ─────────────────────────────── */
+  .prose-tesserin {
+    line-height: 1.8;
+    letter-spacing: -0.01em;
+  }
+  .prose-tesserin h1 { letter-spacing: -0.025em; }
+  .prose-tesserin h2 { letter-spacing: -0.02em; }
+  .prose-tesserin p { margin-top: 0.75em; margin-bottom: 0.75em; }
+  .prose-tesserin blockquote { margin-top: 1em; margin-bottom: 1em; }
+  .prose-tesserin pre { margin-top: 1em; margin-bottom: 1em; }
+  .prose-tesserin ul, .prose-tesserin ol { margin-top: 0.5em; margin-bottom: 0.5em; }
 `
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +280,20 @@ export function TesserinThemeProvider({
   useEffect(() => {
     getSetting("appearance.theme").then((val) => {
       if (val) setThemeState(val)
+    })
+    // Restore custom theme CSS overrides on mount
+    getActiveThemeId().then((themeId) => {
+      const theme = getThemeById(themeId)
+      if (theme) {
+        const cssId = "tesserin-custom-theme"
+        let el = document.getElementById(cssId)
+        if (!el) {
+          el = document.createElement("style")
+          el.id = cssId
+          document.head.appendChild(el)
+        }
+        el.textContent = generateThemeCSS(theme)
+      }
     })
   }, [])
 

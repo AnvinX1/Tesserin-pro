@@ -187,6 +187,29 @@ declare const tesserinAPI: {
             }>;
         };
     };
+    agents: {
+        list: () => Promise<any>;
+        statuses: () => Promise<any>;
+        register: (type: string, config?: Record<string, unknown>) => Promise<any>;
+        update: (id: string, updates: Record<string, unknown>) => Promise<any>;
+        remove: (id: string) => Promise<any>;
+        connect: (id: string) => Promise<any>;
+        disconnect: (id: string) => Promise<any>;
+        callTool: (agentId: string, toolName: string, args: Record<string, unknown>) => Promise<any>;
+        getTools: (agentId: string) => Promise<any>;
+        createToken: (agentId: string, name: string, permissions?: string[], expiresAt?: string) => Promise<any>;
+        getTokens: (agentId: string) => Promise<any>;
+        revokeToken: (agentId: string, tokenId: string) => Promise<any>;
+    };
+    kb: {
+        graph: () => Promise<any>;
+        export: () => Promise<any>;
+        search: (query: string, maxChunks?: number) => Promise<any>;
+        context: (maxNotes?: number) => Promise<any>;
+        noteConnections: (noteId: string) => Promise<any>;
+    };
+    onCanvasUpdated: (callback: (canvasId: string) => void) => (_e: Electron.IpcRendererEvent, canvasId: string) => void;
+    offCanvasUpdated: (handler: (...args: any[]) => void) => void;
 };
 export type TesserinAPI = typeof tesserinAPI;
 export {};

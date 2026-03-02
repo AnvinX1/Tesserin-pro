@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.mono-silver",
+    name: "Mono Silver",
+    author: "Tesserin Community",
+    description: "Soft silver-grey monochrome — muted tones with gentle contrast for all-day use.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#1C1C1E", "#A0A0A5", "#D1D1D6"],
+    category: "monochrome",
+    downloads: 6800,
+    rating: 4.4,
+    colors: {
+      "--bg-app": "#1C1C1E",
+      "--bg-panel": "linear-gradient(145deg, #2C2C2E, #1C1C1E)",
+      "--bg-panel-inset": "#141416",
+      "--text-primary": "#D1D1D6",
+      "--text-secondary": "#8E8E93",
+      "--text-tertiary": "#636366",
+      "--text-on-accent": "#1C1C1E",
+      "--accent-primary": "#A0A0A5",
+      "--accent-pressed": "#8E8E93",
+      "--border-light": "rgba(255, 255, 255, 0.06)",
+      "--border-dark": "rgba(0, 0, 0, 0.6)",
+      "--panel-outer-shadow": "5px 5px 15px rgba(0,0,0,0.4), -1px -1px 4px #2C2C2E",
+      "--btn-shadow": "4px 4px 8px rgba(0,0,0,0.4), -1px -1px 3px #2C2C2E",
+      "--input-inner-shadow": "inset 2px 2px 5px rgba(0,0,0,0.4), inset -1px -1px 2px #2C2C2E",
+      "--graph-node": "#3A3A3C",
+      "--graph-link": "#48484A",
+      "--code-bg": "#141416",
+      "--tooltip-bg": "#2C2C2E",
+      "--tooltip-text": "#D1D1D6",
+      "--tooltip-border": "rgba(160, 160, 165, 0.12)",
+    },
+    styles: {
+      "--radius-panel": "12px",
+      "--radius-btn": "8px",
+      "--radius-inset": "8px",
+      "--btn-hover-lift": "-1px",
+      "--scrollbar-radius": "6px",
+    },
+  }
+
+export default theme

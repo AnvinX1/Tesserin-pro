@@ -9,6 +9,7 @@ const ipc_handlers_1 = require("./ipc-handlers");
 const database_1 = require("./database");
 const mcp_server_1 = require("./mcp-server");
 const api_server_1 = require("./api-server");
+const cloud_agents_1 = require("./cloud-agents");
 // ── Global error handlers ───────────────────────────────────────
 // Prevent the main process from crashing silently on unhandled errors.
 process.on('uncaughtException', (error) => {
@@ -30,8 +31,7 @@ function resolveIconPath() {
     }
     // On Windows, prefer .ico for sharp rendering in taskbar/alt-tab
     if (process.platform === 'win32') {
-        const icoPath = path_1.default.join(process.resourcesPath, 'icon.png');
-        return icoPath;
+        return path_1.default.join(process.resourcesPath, 'icon.ico');
     }
     // Linux
     return path_1.default.join(process.resourcesPath, 'icon.png');
@@ -88,6 +88,18 @@ function createWindow() {
     electron_1.ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false);
 }
 electron_1.app.whenReady().then(() => {
+    // Set application icon — on Linux this updates the dock/taskbar icon
+    // (BrowserWindow.icon alone doesn't reach the taskbar on GNOME/Wayland)
+    // app.setIcon() is only available on Linux
+    if (process.platform === 'linux') {
+        try {
+            const appIcon = electron_1.nativeImage.createFromPath(iconPath);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (!appIcon.isEmpty())
+                electron_1.app.setIcon(appIcon);
+        }
+        catch { /* non-fatal */ }
+    }
     // Initialize SQLite database (non-fatal — app works without it via in-memory fallback)
     try {
         (0, database_1.initDatabase)();
@@ -97,13 +109,21 @@ electron_1.app.whenReady().then(() => {
         console.error('[Tesserin] Failed to initialize SQLite database:', err);
         console.error('[Tesserin] App will continue with in-memory storage fallback');
     }
-    // Register all IPC handlers (DB, AI, FS)
+    // Register all IPC handlers (DB, AI, FS, Agents, KB)
     try {
         (0, ipc_handlers_1.registerIpcHandlers)();
         console.log('[Tesserin] IPC handlers registered');
     }
     catch (err) {
         console.error('[Tesserin] Failed to register IPC handlers:', err);
+    }
+    // Load persisted cloud agent configurations
+    try {
+        cloud_agents_1.cloudAgentManager.loadFromSettings();
+        console.log('[Tesserin] Cloud agent configs loaded');
+    }
+    catch (err) {
+        console.error('[Tesserin] Failed to load cloud agents:', err);
     }
     // Auto-start API server if it was previously enabled
     try {

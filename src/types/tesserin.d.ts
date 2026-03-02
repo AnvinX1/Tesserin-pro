@@ -82,6 +82,7 @@ interface TesserinAI {
         onChunk: (callback: (chunk: string) => void) => void
         onDone: (callback: () => void) => void
         onError: (callback: (error: string) => void) => void
+        cancel: () => void
     }
 
     summarize(text: string, model?: string): Promise<string>
@@ -97,6 +98,7 @@ interface TesserinAI {
         onChunk: (callback: (chunk: string) => void) => void
         onDone: (callback: () => void) => void
         onError: (callback: (error: string) => void) => void
+        cancel: () => void
     }
     listOpenRouterModels(apiKey?: string): Promise<string[]>
 }
@@ -208,6 +210,122 @@ interface TesserinPPT {
     generate(specOrMarkdown: Record<string, unknown> | string, outputPath: string): Promise<string>
 }
 
+/* ── Cloud Agents ──────────────────────────────────────────────────── */
+
+interface TesserinCloudAgentConfig {
+    id: string
+    name: string
+    type: 'claude-code' | 'gemini-cli' | 'openai-codex' | 'opencode' | 'custom'
+    transport: 'docker-mcp' | 'stdio' | 'sse' | 'streamable-http'
+    enabled: boolean
+    dockerImage?: string
+    dockerProfile?: string
+    command?: string
+    args?: string[]
+    env?: Record<string, string>
+    url?: string
+    knowledgeBaseAccess: boolean
+    permissions: string[]
+    createdAt: string
+    lastConnectedAt?: string
+}
+
+interface TesserinAgentConnectionStatus {
+    agentId: string
+    agentName: string
+    agentType: string
+    status: 'connected' | 'disconnected' | 'connecting' | 'error'
+    error?: string
+    toolCount: number
+    lastActivity?: string
+}
+
+interface TesserinAgentToken {
+    id: string
+    agentId: string
+    token: string
+    name: string
+    permissions: string[]
+    createdAt: string
+    expiresAt?: string
+    isRevoked: boolean
+}
+
+interface TesserinCloudAgents {
+    list(): Promise<TesserinCloudAgentConfig[]>
+    statuses(): Promise<TesserinAgentConnectionStatus[]>
+    register(type: string, config?: Record<string, unknown>): Promise<TesserinCloudAgentConfig>
+    update(id: string, updates: Record<string, unknown>): Promise<TesserinCloudAgentConfig | null>
+    remove(id: string): Promise<boolean>
+    connect(id: string): Promise<void>
+    disconnect(id: string): Promise<void>
+    callTool(agentId: string, toolName: string, args: Record<string, unknown>): Promise<string>
+    getTools(agentId: string): Promise<TesserinMcpToolInfo[]>
+    createToken(agentId: string, name: string, permissions?: string[], expiresAt?: string): Promise<{ token: TesserinAgentToken; rawToken: string } | null>
+    getTokens(agentId: string): Promise<TesserinAgentToken[]>
+    revokeToken(agentId: string, tokenId: string): Promise<boolean>
+}
+
+/* ── Knowledge Base ────────────────────────────────────────────────── */
+
+interface TesserinKnowledgeNode {
+    id: string
+    title: string
+    content: string
+    type: 'note' | 'task' | 'folder'
+    tags: string[]
+    folderId?: string
+    folderPath?: string
+    linkCount: number
+    outgoingLinks: string[]
+    incomingLinks: string[]
+    createdAt: string
+    updatedAt: string
+}
+
+interface TesserinKnowledgeEdge {
+    source: string
+    target: string
+    type: 'wiki-link' | 'tag-shared' | 'folder-sibling'
+    label?: string
+}
+
+interface TesserinKnowledgeGraph {
+    nodes: TesserinKnowledgeNode[]
+    edges: TesserinKnowledgeEdge[]
+    metadata: {
+        exportedAt: string
+        noteCount: number
+        edgeCount: number
+        tagCount: number
+        folderCount: number
+    }
+}
+
+interface TesserinContextChunk {
+    noteId: string
+    noteTitle: string
+    content: string
+    relevance: number
+    tags: string[]
+    linkedNotes: string[]
+}
+
+interface TesserinKnowledgeBase {
+    graph(): Promise<TesserinKnowledgeGraph>
+    export(): Promise<any>
+    search(query: string, maxChunks?: number): Promise<TesserinContextChunk[]>
+    context(maxNotes?: number): Promise<string>
+    noteConnections(noteId: string): Promise<{
+        note: { id: string; title: string }
+        tags: string[]
+        outgoingLinks: string[]
+        incomingLinks: string[]
+        linkCount: number
+        edges: TesserinKnowledgeEdge[]
+    }>
+}
+
 interface TesserinAPI {
     db: TesserinDB
     ai: TesserinAI
@@ -218,6 +336,10 @@ interface TesserinAPI {
     dialog?: TesserinDialog
     api?: TesserinApiManager
     ppt?: TesserinPPT
+    agents?: TesserinCloudAgents
+    kb?: TesserinKnowledgeBase
+    onCanvasUpdated?: (callback: (canvasId: string) => void) => any
+    offCanvasUpdated?: (handler: (...args: any[]) => void) => void
 }
 
 declare global {

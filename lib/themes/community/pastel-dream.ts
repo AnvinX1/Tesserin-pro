@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.pastel-dream",
+    name: "Pastel Dream",
+    author: "Tesserin Community",
+    description: "Soft pastel rainbow — baby pink, lavender, and mint on a creamy peach base.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#FFF5F5", "#F9A8D4", "#6B3A6A"],
+    category: "pastel",
+    downloads: 11500,
+    rating: 4.7,
+    colors: {
+      "--bg-app": "#FFF5F5",
+      "--bg-panel": "linear-gradient(145deg, #FFF5F5, #FDE8E8)",
+      "--bg-panel-inset": "#FBD5D5",
+      "--text-primary": "#6B3A6A",
+      "--text-secondary": "#9B5E9A",
+      "--text-tertiary": "#C48DC3",
+      "--text-on-accent": "#FFFFFF",
+      "--accent-primary": "#F9A8D4",
+      "--accent-pressed": "#F472B6",
+      "--border-light": "rgba(255, 255, 255, 0.7)",
+      "--border-dark": "rgba(107, 58, 106, 0.04)",
+      "--panel-outer-shadow": "6px 6px 16px rgba(249,168,212,0.15), -4px -4px 12px rgba(255,255,255,0.7)",
+      "--btn-shadow": "3px 3px 8px rgba(249,168,212,0.12), -3px -3px 8px rgba(255,255,255,0.65)",
+      "--input-inner-shadow": "inset 2px 2px 6px rgba(249,168,212,0.1), inset -2px -2px 6px rgba(255,255,255,0.6)",
+      "--graph-node": "#FECDD3",
+      "--graph-link": "#FBBFCC",
+      "--code-bg": "#FDE8E8",
+      "--tooltip-bg": "#6B3A6A",
+      "--tooltip-text": "#FFF5F5",
+      "--tooltip-border": "rgba(249, 168, 212, 0.2)",
+    },
+    styles: {
+      "--radius-panel": "22px",
+      "--radius-btn": "16px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-2px",
+      "--scrollbar-radius": "10px",
+    },
+  }
+
+export default theme

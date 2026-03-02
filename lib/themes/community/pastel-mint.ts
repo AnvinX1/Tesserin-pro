@@ -1,0 +1,45 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.pastel-mint",
+    name: "Pastel Mint",
+    author: "Tesserin Community",
+    description: "Cool pastel mint and aqua — fresh and clean like a morning breeze.",
+    version: "1.0.0",
+    mode: "light",
+    preview: ["#F0FDFA", "#2DD4BF", "#134E4A"],
+    category: "pastel",
+    downloads: 8800,
+    rating: 4.6,
+    colors: {
+      "--bg-app": "#F0FDFA",
+      "--bg-panel": "linear-gradient(145deg, #F0FDFA, #CCFBF1)",
+      "--bg-panel-inset": "#B2F5EA",
+      "--text-primary": "#134E4A",
+      "--text-secondary": "#2D7A70",
+      "--text-tertiary": "#5EADA0",
+      "--text-on-accent": "#FFFFFF",
+      "--accent-primary": "#2DD4BF",
+      "--accent-pressed": "#14B8A6",
+      "--border-light": "rgba(255, 255, 255, 0.7)",
+      "--border-dark": "rgba(19, 78, 74, 0.04)",
+      "--panel-outer-shadow": "6px 6px 16px rgba(45,212,191,0.1), -4px -4px 12px rgba(255,255,255,0.7)",
+      "--btn-shadow": "3px 3px 8px rgba(45,212,191,0.08), -3px -3px 8px rgba(255,255,255,0.65)",
+      "--input-inner-shadow": "inset 2px 2px 6px rgba(45,212,191,0.08), inset -2px -2px 6px rgba(255,255,255,0.6)",
+      "--graph-node": "#A7F3D0",
+      "--graph-link": "#6EE7B7",
+      "--code-bg": "#CCFBF1",
+      "--tooltip-bg": "#134E4A",
+      "--tooltip-text": "#F0FDFA",
+      "--tooltip-border": "rgba(45, 212, 191, 0.2)",
+    },
+    styles: {
+      "--radius-panel": "22px",
+      "--radius-btn": "16px",
+      "--radius-inset": "16px",
+      "--btn-hover-lift": "-2px",
+      "--scrollbar-radius": "10px",
+    },
+  }
+
+export default theme

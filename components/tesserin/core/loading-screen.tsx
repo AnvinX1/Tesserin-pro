@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { TesserinLogo } from "./tesserin-logo"
+import { AnimatedIcon } from "./animated-icon"
 import { useTesserinTheme } from "./theme-provider"
 
 /**
@@ -21,7 +22,7 @@ const TAGLINES = [
   "Local-first. Endlessly powerful.",
 ]
 
-export function LoadingScreen() {
+export function LoadingScreen({ fadingOut = false }: { fadingOut?: boolean }) {
   const { isDark } = useTesserinTheme()
   const [tagline] = useState(
     () => TAGLINES[Math.floor(Math.random() * TAGLINES.length)],
@@ -36,8 +37,13 @@ export function LoadingScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden transition-colors duration-500"
-      style={{ backgroundColor: isDark ? "#050505" : "#f8f6f1" }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        backgroundColor: isDark ? "#050505" : "#f8f6f1",
+        opacity: fadingOut ? 0 : 1,
+        transition: "opacity 0.4s ease-out",
+        pointerEvents: fadingOut ? "none" : undefined,
+      }}
       role="status"
       aria-label="Loading Tesserin"
     >

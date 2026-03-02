@@ -10,6 +10,7 @@
     "electron:dev": "tsc -p electron/tsconfig.json && electron .",
     "build": "vite build",
     "electron:build": "tsc -p electron/tsconfig.json && electron-builder",
+    "dist": "vite build && tsc -p electron/tsconfig.json && electron-builder",
     "clean": "rm -rf dist release electron/dist && echo 'Build artifacts cleaned'",
     "clean:data": "rm -rf \"$HOME/.config/tesserin/tesserin.db\" \"$HOME/.config/tesserin/tesserin.db-shm\" \"$HOME/.config/tesserin/tesserin.db-wal\" \"$HOME/.config/tesserin/Local Storage\" \"$HOME/.config/tesserin/Session Storage\" && echo 'User data reset'",
     "mcp": "tsc -p electron/tsconfig.json && node electron/dist/main.js --mcp",
@@ -33,6 +34,14 @@
       {
         "from": "build/icon.png",
         "to": "icon.png"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "build/icon.icns",
+        "to": "icon.icns"
       }
     ],
     "icon": "build/icons",
@@ -84,6 +93,7 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@hookform/resolvers": "^3.9.1",
+    "@lordicon/react": "^1.11.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
@@ -122,6 +132,7 @@
     "dompurify": "^3.3.1",
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",
+    "lottie-web": "^5.13.0",
     "mermaid": "^11.12.2",
     "pptxgenjs": "^4.0.1",
     "react": "19.2.4",

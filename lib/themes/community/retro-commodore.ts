@@ -1,0 +1,48 @@
+import type { TesserinTheme } from "../types"
+
+const theme: TesserinTheme = {
+    id: "community.retro-commodore",
+    name: "Retro Commodore",
+    author: "Tesserin Community",
+    description: "Commodore 64 inspired — classic blue screen with light blue text. READY.",
+    version: "1.0.0",
+    mode: "dark",
+    preview: ["#40318D", "#7B71C8", "#A09ADE"],
+    category: "retro",
+    downloads: 5900,
+    rating: 4.3,
+    colors: {
+      "--bg-app": "#40318D",
+      "--bg-panel": "linear-gradient(145deg, #4A3A9A, #40318D)",
+      "--bg-panel-inset": "#352878",
+      "--text-primary": "#A09ADE",
+      "--text-secondary": "#7B71C8",
+      "--text-tertiary": "#5C52A0",
+      "--text-on-accent": "#40318D",
+      "--accent-primary": "#7B71C8",
+      "--accent-pressed": "#6B61B8",
+      "--border-light": "rgba(123, 113, 200, 0.12)",
+      "--border-dark": "rgba(0, 0, 0, 0.3)",
+      "--panel-outer-shadow": "5px 5px 15px rgba(0,0,0,0.35), -1px -1px 4px #4A3A9A",
+      "--btn-shadow": "4px 4px 8px rgba(0,0,0,0.35), -1px -1px 3px #4A3A9A",
+      "--input-inner-shadow": "inset 2px 2px 5px rgba(0,0,0,0.35), inset -1px -1px 2px #4A3A9A",
+      "--graph-node": "#5C52A0",
+      "--graph-link": "#4A3A9A",
+      "--code-bg": "#352878",
+      "--tooltip-bg": "#4A3A9A",
+      "--tooltip-text": "#A09ADE",
+      "--tooltip-border": "rgba(123, 113, 200, 0.15)",
+    },
+    styles: {
+      "--radius-panel": "4px",
+      "--radius-btn": "3px",
+      "--radius-inset": "3px",
+      "--border-width": "2px",
+      "--btn-hover-lift": "-1px",
+      "--btn-active-press": "2px",
+      "--scrollbar-radius": "2px",
+      "--accent-glow": "0 0 8px rgba(123, 113, 200, 0.2)",
+    },
+  }
+
+export default theme
