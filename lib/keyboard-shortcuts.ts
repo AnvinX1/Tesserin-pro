@@ -40,13 +40,17 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: "quick-capture",     label: "Quick Capture",            defaultKeys: "Ctrl+Shift+D", category: "panels" },
   { id: "references",        label: "Reference Manager",        defaultKeys: "Ctrl+Shift+R", category: "panels" },
   { id: "toggle-split",      label: "Toggle Split View",        defaultKeys: "Ctrl+\\",      category: "editor" },
-  // Window management — handled in the Electron main process via before-input-event
+  // Window management — registered as global shortcuts in the Electron main process
   { id: "window-fullscreen", label: "Toggle Full Screen",        defaultKeys: "F11",          category: "navigation" },
   { id: "window-minimize",   label: "Minimize Window",           defaultKeys: "Ctrl+M",       category: "navigation" },
   { id: "window-maximize",   label: "Maximize / Restore Window", defaultKeys: "Ctrl+Shift+F", category: "navigation" },
-  // Split pane divider keyboard resize — handled in SplitPaneLayout
-  { id: "split-shrink",      label: "Shrink Primary Pane",       defaultKeys: "Ctrl+[",       category: "editor" },
-  { id: "split-grow",        label: "Grow Primary Pane",         defaultKeys: "Ctrl+]",       category: "editor" },
+  { id: "window-snap-left",  label: "Snap Window Left Half",     defaultKeys: "Super+Left",   category: "navigation" },
+  { id: "window-snap-right", label: "Snap Window Right Half",    defaultKeys: "Super+Right",  category: "navigation" },
+  { id: "window-snap-max",   label: "Snap Window Maximize",      defaultKeys: "Super+Up",     category: "navigation" },
+  { id: "window-snap-restore",label: "Restore / Minimize Window",defaultKeys: "Super+Down",   category: "navigation" },
+  // Split pane divider keyboard resize — active when a split is open
+  { id: "split-shrink",      label: "Shrink Primary Pane",       defaultKeys: "Ctrl+ArrowLeft",  category: "editor" },
+  { id: "split-grow",        label: "Grow Primary Pane",         defaultKeys: "Ctrl+ArrowRight", category: "editor" },
 ]
 
 /* ------------------------------------------------------------------ */

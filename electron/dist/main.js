@@ -76,6 +76,31 @@ function createWindow() {
     mainWindow.once('ready-to-show', () => {
         mainWindow?.show();
     });
+    // ── Window resize / management keyboard shortcuts ─────────────────────────
+    // Handled here (main process, before-input-event) so they work even when
+    // Excalidraw or another renderer element has keyboard focus.
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+        if (input.type !== 'keyDown')
+            return;
+        // F11 — toggle OS-level window fullscreen
+        if (input.key === 'F11') {
+            mainWindow?.setFullScreen(!mainWindow.isFullScreen());
+            return;
+        }
+        // Ctrl+M — minimize window
+        if (input.control && !input.shift && !input.alt && input.key.toLowerCase() === 'm') {
+            mainWindow?.minimize();
+            return;
+        }
+        // Ctrl+Shift+F — maximize / restore window
+        if (input.control && input.shift && !input.alt && input.key.toLowerCase() === 'f') {
+            if (mainWindow?.isMaximized())
+                mainWindow.unmaximize();
+            else
+                mainWindow?.maximize();
+            return;
+        }
+    });
     mainWindow.on('closed', () => {
         mainWindow = null;
     });

@@ -235,21 +235,24 @@ export function SplitPaneLayout({
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Keyboard-driven divider resize: Ctrl+[ shrinks primary, Ctrl+] grows primary
+  // Keyboard-driven divider resize: Ctrl+Left/Right (or Up/Down) nudges the divider
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!splitState.isActive || !e.ctrlKey || e.shiftKey || e.altKey) return
-      if (e.key === '[') {
+      if (!splitState.isActive || !e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return
+      const isHoriz = splitState.direction === 'horizontal'
+      const shrinkKey = isHoriz ? 'ArrowLeft' : 'ArrowUp'
+      const growKey  = isHoriz ? 'ArrowRight' : 'ArrowDown'
+      if (e.key === shrinkKey) {
         e.preventDefault()
         setSplitRatio((r) => Math.max(0.2, parseFloat((r - 0.05).toFixed(2))))
-      } else if (e.key === ']') {
+      } else if (e.key === growKey) {
         e.preventDefault()
         setSplitRatio((r) => Math.min(0.8, parseFloat((r + 0.05).toFixed(2))))
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [splitState.isActive])
+  }, [splitState.isActive, splitState.direction])
 
   // Keep-alive: track every view that has been opened so it stays mounted
   const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([primaryViewType]))

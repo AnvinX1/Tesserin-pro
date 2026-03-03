@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage, session } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, session, screen, globalShortcut } from 'electron'
 import path from 'path'
 import { registerIpcHandlers } from './ipc-handlers'
 import { initDatabase, getSetting } from './database'
@@ -177,6 +177,36 @@ app.whenReady().then(() => {
   // Create the main window
   createWindow()
 
+  // ── Super+Arrow window snapping ──────────────────────────────────
+  // GNOME/KDE intercept Super+Arrow at the compositor level so frameless
+  // windows never receive them. globalShortcut registers at OS level so
+  // Tesserin gets them first and snaps itself using setBounds().
+  const snap = (fn: () => void) => () => { if (mainWindow) fn() }
+  globalShortcut.register('Super+Left',  snap(() => {
+    const { x, y, width, height } = screen.getDisplayMatching(mainWindow!.getBounds()).workArea
+    mainWindow!.setFullScreen(false)
+    mainWindow!.unmaximize()
+    mainWindow!.setBounds({ x, y, width: Math.floor(width / 2), height })
+  }))
+  globalShortcut.register('Super+Right', snap(() => {
+    const { x, y, width, height } = screen.getDisplayMatching(mainWindow!.getBounds()).workArea
+    mainWindow!.setFullScreen(false)
+    mainWindow!.unmaximize()
+    mainWindow!.setBounds({ x: x + Math.floor(width / 2), y, width: Math.ceil(width / 2), height })
+  }))
+  globalShortcut.register('Super+Up',    snap(() => {
+    mainWindow!.setFullScreen(false)
+    mainWindow!.maximize()
+  }))
+  globalShortcut.register('Super+Down',  snap(() => {
+    if (mainWindow!.isMaximized() || mainWindow!.isFullScreen()) {
+      mainWindow!.setFullScreen(false)
+      mainWindow!.unmaximize()
+    } else {
+      mainWindow!.minimize()
+    }
+  }))
+
   // ── Content Security Policy ──────────────────────────────────────
   // Read the Ollama endpoint from settings so the CSP allows the configured host
   let ollamaOrigin = 'http://127.0.0.1:11434'
@@ -225,5 +255,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  globalShortcut.unregisterAll()
   if (process.platform !== 'darwin') app.quit()
 })
