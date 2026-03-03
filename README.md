@@ -12,7 +12,7 @@ Knowledge graphs · Reference manager · Block references · AI chat · Canvas �
 
 [![CI](https://github.com/AnvinX1/Tesserin-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/AnvinX1/Tesserin-pro/actions/workflows/ci.yml)
 [![Release](https://github.com/AnvinX1/Tesserin-pro/actions/workflows/release.yml/badge.svg)](https://github.com/AnvinX1/Tesserin-pro/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-FACC15.svg)](LICENSE)
+[![License: Tesserin Pro](https://img.shields.io/badge/License-Tesserin%20Pro-blueviolet.svg)](LICENSE)
 [![Electron](https://img.shields.io/badge/Electron-33-47848F.svg?logo=electron)](https://www.electronjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6.svg?logo=typescript)](https://www.typescriptlang.org)
 
@@ -242,7 +242,9 @@ The release workflow builds for all three platforms and publishes the binaries t
 
 ## 🤝 Contributing
 
-We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+Contributions are welcome and appreciated! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+
+By contributing, you agree that your work may be included in Tesserin under the [Tesserin Pro License](LICENSE). You'll be credited in the project history.
 
 ```bash
 # Fork → Clone → Branch → Code → PR
@@ -258,7 +260,11 @@ git push origin feat/your-feature
 
 ## 📄 License
 
-[MIT](LICENSE) — free for personal and commercial use.
+[Tesserin Pro License v1.0](LICENSE)
+
+The source code is publicly available — you can read it, learn from it, modify it locally, and contribute to it. **Commercial redistribution, reselling, or using the Tesserin name in competing products requires written permission.**
+
+> tl;dr — Open to explore and contribute. The product and its identity stay ours.
 
 ---
 

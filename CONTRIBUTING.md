@@ -4,6 +4,8 @@
 
 Thank you for considering contributing to Tesserin! This guide will help you get started.
 
+> **License note:** Tesserin is published under the [Tesserin Pro License v1.0](LICENSE). By submitting a contribution you agree that it may be included in the project under that license. The copyright of the Software as a whole remains with the original authors. You'll be credited in the project's git history.
+
 ## 📋 Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
