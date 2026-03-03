@@ -1039,6 +1039,39 @@ export function SAMNode() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ backgroundColor: "var(--bg-app)" }}>
+
+          {/* ── Ollama not found banner ── */}
+          {isConnected === false && (
+            <div
+              className="mx-4 mt-4 p-4 rounded-2xl flex flex-col gap-3"
+              style={{
+                backgroundColor: "var(--bg-panel)",
+                border: "1px solid var(--border-mid)",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <FiAlertTriangle size={14} style={{ color: "var(--text-tertiary)" }} />
+                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Ollama not detected</span>
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                SAM uses Ollama to run AI models locally on your machine — no cloud, no API key, no data leaving your device.
+              </p>
+              <div className="text-xs space-y-1.5" style={{ color: "var(--text-tertiary)" }}>
+                <div className="font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Get started in 3 steps:</div>
+                <div>1. Download Ollama from <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--text-secondary)" }}>ollama.com</a> and install it</div>
+                <div className="font-mono pl-2 py-1 rounded" style={{ backgroundColor: "var(--bg-panel-inset)" }}>2. Run: ollama pull llama3.2</div>
+                <div>3. Ollama runs in the background automatically on startup</div>
+              </div>
+              <button
+                onClick={checkConnection}
+                className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-white/10"
+                style={{ backgroundColor: "var(--bg-panel-inset)", color: "var(--text-secondary)", border: "1px solid var(--border-dark)" }}
+              >
+                <FiRefreshCw size={11} /> Check again
+              </button>
+            </div>
+          )}
+
           {!activeConvo ? (
             /* ── Welcome screen ── */
             <div className="flex flex-col items-center justify-center h-full px-8">

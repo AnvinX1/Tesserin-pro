@@ -5,6 +5,7 @@ import { initDatabase, getSetting } from './database'
 import { startMcpServerStdio } from './mcp-server'
 import { startApiServer } from './api-server'
 import { cloudAgentManager } from './cloud-agents'
+import { setupAutoUpdater } from './updater'
 
 // ── Global error handlers ───────────────────────────────────────
 // Prevent the main process from crashing silently on unhandled errors.
@@ -176,6 +177,11 @@ app.whenReady().then(() => {
 
   // Create the main window
   createWindow()
+
+  // ── Auto-updater (production only) ─────────────────────────────────
+  if (!isDev) {
+    setupAutoUpdater(mainWindow)
+  }
 
   // ── Super+Arrow window snapping ──────────────────────────────────
   // GNOME/KDE intercept Super+Arrow at the compositor level so frameless

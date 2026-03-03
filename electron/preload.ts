@@ -254,6 +254,21 @@ const tesserinAPI = {
     offCanvasUpdated: (handler: (...args: any[]) => void) => {
         ipcRenderer.removeListener('canvas:updated', handler)
     },
+
+    // ── Auto-updater ──────────────────────────────────────────────────
+    updater: {
+        check: () => ipcRenderer.invoke('updater:check'),
+        download: () => ipcRenderer.invoke('updater:download'),
+        install: () => ipcRenderer.invoke('updater:install'),
+        onStatus: (callback: (status: unknown) => void) => {
+            const handler = (_e: Electron.IpcRendererEvent, status: unknown) => callback(status)
+            ipcRenderer.on('updater:status', handler)
+            return handler
+        },
+        offStatus: (handler: (...args: any[]) => void) => {
+            ipcRenderer.removeListener('updater:status', handler)
+        },
+    },
 }
 
 contextBridge.exposeInMainWorld('tesserin', tesserinAPI)

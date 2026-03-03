@@ -106,6 +106,24 @@ function AppContent() {
     const [showQuickCapture, setShowQuickCapture] = useState(false)
     const [notice, setNotice] = useState<{ message: string; visible: boolean }>({ message: "", visible: false })
     const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // ── Auto-updater ────────────────────────────────────────────────────
+    type UpdateStatus =
+        | { type: 'available'; version: string }
+        | { type: 'downloading'; percent: number }
+        | { type: 'downloaded'; version: string }
+        | { type: 'error'; message: string }
+    const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
+    useEffect(() => {
+        const api = (window as any).tesserin?.updater
+        if (!api) return
+        const handler = api.onStatus((status: UpdateStatus) => {
+            if (status.type === 'available' || status.type === 'downloading' || status.type === 'downloaded') {
+                setUpdateStatus(status)
+            }
+        })
+        return () => api.offStatus(handler)
+    }, [])
     const { notes, selectedNoteId, selectNote, addNote, updateNote, isLoading } = useNotes()
 
     // Onboarding — shown once when vault is empty
@@ -415,6 +433,53 @@ function AppContent() {
                     <React.Suspense fallback={null}>
                         <DailyNotes quickCapture onClose={() => setShowQuickCapture(false)} />
                     </React.Suspense>
+                )}
+
+                {/* ── Update banner ── */}
+                {updateStatus && (updateStatus.type === 'available' || updateStatus.type === 'downloading' || updateStatus.type === 'downloaded') && (
+                    <div
+                        className="fixed bottom-8 right-5 z-[200] flex items-center gap-3 px-4 py-3 rounded-2xl text-sm shadow-2xl"
+                        style={{
+                            backgroundColor: "var(--bg-panel)",
+                            border: "1px solid var(--border-mid)",
+                            boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        {updateStatus.type === 'available' && (
+                            <>
+                                <span style={{ color: "var(--text-secondary)" }}>
+                                    v{updateStatus.version} is available
+                                </span>
+                                <button
+                                    onClick={() => (window as any).tesserin?.updater?.download()}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-white/10"
+                                    style={{ backgroundColor: "var(--bg-panel-inset)", color: "var(--text-primary)", border: "1px solid var(--border-dark)" }}
+                                >
+                                    Download
+                                </button>
+                                <button onClick={() => setUpdateStatus(null)} style={{ color: "var(--text-tertiary)" }} className="hover:opacity-70 text-xs">✕</button>
+                            </>
+                        )}
+                        {updateStatus.type === 'downloading' && (
+                            <span style={{ color: "var(--text-secondary)" }}>
+                                Downloading update… {updateStatus.percent}%
+                            </span>
+                        )}
+                        {updateStatus.type === 'downloaded' && (
+                            <>
+                                <span style={{ color: "var(--text-secondary)" }}>
+                                    v{updateStatus.version} ready to install
+                                </span>
+                                <button
+                                    onClick={() => (window as any).tesserin?.updater?.install()}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-white/10"
+                                    style={{ backgroundColor: "var(--bg-panel-inset)", color: "var(--text-primary)", border: "1px solid var(--border-dark)" }}
+                                >
+                                    Restart &amp; Install
+                                </button>
+                            </>
+                        )}
+                    </div>
                 )}
 
                 {/* ── First-run onboarding ── */}

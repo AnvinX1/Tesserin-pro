@@ -172,6 +172,37 @@ electron_1.app.whenReady().then(() => {
     }
     // Create the main window
     createWindow();
+    // ── Super+Arrow window snapping ──────────────────────────────────
+    // GNOME/KDE intercept Super+Arrow at the compositor level so frameless
+    // windows never receive them. globalShortcut registers at OS level so
+    // Tesserin gets them first and snaps itself using setBounds().
+    const snap = (fn) => () => { if (mainWindow)
+        fn(); };
+    electron_1.globalShortcut.register('Super+Left', snap(() => {
+        const { x, y, width, height } = electron_1.screen.getDisplayMatching(mainWindow.getBounds()).workArea;
+        mainWindow.setFullScreen(false);
+        mainWindow.unmaximize();
+        mainWindow.setBounds({ x, y, width: Math.floor(width / 2), height });
+    }));
+    electron_1.globalShortcut.register('Super+Right', snap(() => {
+        const { x, y, width, height } = electron_1.screen.getDisplayMatching(mainWindow.getBounds()).workArea;
+        mainWindow.setFullScreen(false);
+        mainWindow.unmaximize();
+        mainWindow.setBounds({ x: x + Math.floor(width / 2), y, width: Math.ceil(width / 2), height });
+    }));
+    electron_1.globalShortcut.register('Super+Up', snap(() => {
+        mainWindow.setFullScreen(false);
+        mainWindow.maximize();
+    }));
+    electron_1.globalShortcut.register('Super+Down', snap(() => {
+        if (mainWindow.isMaximized() || mainWindow.isFullScreen()) {
+            mainWindow.setFullScreen(false);
+            mainWindow.unmaximize();
+        }
+        else {
+            mainWindow.minimize();
+        }
+    }));
     // ── Content Security Policy ──────────────────────────────────────
     // Read the Ollama endpoint from settings so the CSP allows the configured host
     let ollamaOrigin = 'http://127.0.0.1:11434';
@@ -217,6 +248,7 @@ electron_1.app.whenReady().then(() => {
     });
 });
 electron_1.app.on('window-all-closed', () => {
+    electron_1.globalShortcut.unregisterAll();
     if (process.platform !== 'darwin')
         electron_1.app.quit();
 });

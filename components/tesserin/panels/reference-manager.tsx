@@ -582,7 +582,7 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                   />
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center gap-3">
-                    <FiBookOpen size={32} style={{ color: "var(--text-tertiary)", opacity: 0.3 }} />
+                    <FiBook size={32} style={{ color: "var(--text-tertiary)", opacity: 0.3 }} />
                     <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                       Select a reference to view details
                     </p>

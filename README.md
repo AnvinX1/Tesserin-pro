@@ -28,15 +28,14 @@ Knowledge graphs · Reference manager · Block references · AI chat · Canvas �
 
 | Platform | Download | Format |
 |----------|----------|--------|
-| <img src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white" /> | [**Tesserin-Setup.exe**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin-Setup-1.0.0.exe) | NSIS installer |
-| <img src="https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white" /> | [**Tesserin.dmg**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin-1.0.0.dmg) | Disk image |
-| <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" /> | [**Tesserin.AppImage**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin-1.0.0.AppImage) | Portable |
-| <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" /> | [**Tesserin.deb**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/tesserin_1.0.0_amd64.deb) | Debian/Ubuntu |
-| <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" /> | [**Tesserin.rpm**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/tesserin-1.0.0.x86_64.rpm) | Fedora/RHEL |
+| <img src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white" /> | [**Tesserin-Setup.exe**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin+Setup+1.1.7.exe) | NSIS installer |
+| <img src="https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white" /> | [**Tesserin.dmg**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin-1.1.7.dmg) | Disk image |
+| <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" /> | [**Tesserin.AppImage**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/Tesserin-1.1.7.AppImage) | Portable |
+| <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" /> | [**Tesserin.deb**](https://github.com/AnvinX1/Tesserin-pro/releases/latest/download/tesserin_1.1.7_amd64.deb) | Debian/Ubuntu |
 
 </div>
 
-> **Or browse all releases:** [github.com/AnvinX1/Tesserin-pro/releases](https://github.com/AnvinX1/Tesserin-pro/releases)
+> **Browse all releases:** [github.com/AnvinX1/Tesserin-pro/releases](https://github.com/AnvinX1/Tesserin-pro/releases) — links above update with each new release.
 
 ---
 
