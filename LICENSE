@@ -1,21 +1,93 @@
-MIT License
+Tesserin Pro License
+Version 1.0
 
-Copyright (c) 2025-2026 Tesserin
+Copyright (c) 2025-2026 AnvinX1 and the Tesserin contributors.
+All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+────────────────────────────────────────────────────────────────────────────────
+PREAMBLE
+────────────────────────────────────────────────────────────────────────────────
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Tesserin Pro is an open-source project. Its source code is publicly available,
+contributions are welcomed, and you are encouraged to study, improve, and build
+with it. At the same time, Tesserin Pro remains a product — its name, identity,
+and commercial distribution are protected to ensure the project can grow and be
+sustained by its authors.
+
+────────────────────────────────────────────────────────────────────────────────
+DEFINITIONS
+────────────────────────────────────────────────────────────────────────────────
+
+"Software"      — The Tesserin Pro source code, assets, documentation, and all
+                  associated files in this repository.
+
+"Contribution"  — Any patch, pull request, suggestion, or other work
+                  voluntarily submitted to the official repository.
+
+"You"           — The individual or entity reading and acting under this License.
+
+"Commercial Use"— Distributing, selling, licensing, or offering the Software
+                  (or a derivative work) to third parties for a fee, as a hosted
+                  service, or as a competing standalone product.
+
+────────────────────────────────────────────────────────────────────────────────
+RIGHTS GRANTED
+────────────────────────────────────────────────────────────────────────────────
+
+Subject to the terms below, the copyright holders grant You a worldwide,
+royalty-free license to:
+
+  1. View, download, and study the source code for any purpose.
+  2. Modify the source code for personal, educational, or internal use.
+  3. Run the Software locally for personal or non-commercial purposes.
+  4. Submit Contributions to the official repository (see below).
+
+────────────────────────────────────────────────────────────────────────────────
+RESTRICTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+Without prior written permission from the copyright holders, You may NOT:
+
+  1. Distribute, sell, sublicense, or offer the Software or any derivative
+     work — in whole or in part — to third parties as a product or service.
+
+  2. Use the name "Tesserin", "Tesserin Pro", associated logos, or other
+     project branding in any fork, derivative work, or competing product in a
+     way that implies official endorsement or origin.
+
+  3. Remove or alter any copyright notices, license headers, or attribution
+     statements present in the Software.
+
+────────────────────────────────────────────────────────────────────────────────
+CONTRIBUTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+Contributions are warmly welcomed. By submitting a Contribution you agree that:
+
+  — Your Contribution is your original work and you have the right to submit it.
+
+  — You grant the copyright holders a perpetual, worldwide, irrevocable,
+    royalty-free license to use, reproduce, modify, and distribute your
+    Contribution as part of the Software under this License or any future
+    version of it.
+
+  — The copyright of the Software as a whole, including its name and identity,
+    remains with the original copyright holders.
+
+  — You will be credited as a contributor in the project history.
+
+────────────────────────────────────────────────────────────────────────────────
+DISCLAIMER
+────────────────────────────────────────────────────────────────────────────────
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT
+HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+────────────────────────────────────────────────────────────────────────────────
+
+For commercial licensing inquiries, please open an issue or contact the
+maintainers through the repository.
