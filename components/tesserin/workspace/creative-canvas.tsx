@@ -15,9 +15,10 @@ import { useCanvasStore } from "@/lib/canvas-store"
 import { setExcalidrawAPI } from "@/lib/canvas-store"
 import { excalidrawId } from "@/lib/canvas-elements"
 import { generateDiagram, type DiagramType } from "@/lib/diagram-ai"
+import { parseMermaid } from "@/lib/mermaid-to-excalidraw"
 import { CanvasTabBar } from "./canvas-tab-bar"
 import { CanvasAIDialog } from "./canvas-ai-dialog"
-import { FiFileText, FiX } from "react-icons/fi"
+import { FiFileText, FiX, FiColumns } from "react-icons/fi"
 
 /**
  * CreativeCanvas — Tesseradraw
@@ -272,7 +273,7 @@ function NotePickerPanel({
 
 /* ── component ───────────────────────────────────────────── */
 
-export function CreativeCanvas() {
+export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {}) {
   const { isDark } = useTesserinTheme()
   const { notes } = useNotes()
   const {
@@ -721,15 +722,33 @@ export function CreativeCanvas() {
 
   // ── AI diagram generation handler ─────────────────────────────
   const handleAIGenerate = useCallback(
-    async (prompt: string, type: DiagramType) => {
+    async (prompt: string, type: DiagramType, mermaidCode?: string) => {
       setIsGenerating(true)
       try {
-        const result = await generateDiagram(prompt, type, aiInsertPos.current, isDark)
+        let elements: any[]
+
+        if (type === "mermaid" || mermaidCode?.trim()) {
+          // Use provided Mermaid code directly, or ask AI to write it
+          let code = mermaidCode?.trim() ?? ""
+          if (!code) {
+            const { generateMermaidCode } = await import("@/lib/diagram-ai")
+            code = await generateMermaidCode(prompt, "auto")
+          }
+          const pos = aiInsertPos.current ?? { x: 100, y: 100 }
+          const result = parseMermaid(code, isDark, pos.x, pos.y)
+          if (result.error || result.elements.length === 0) {
+            throw new Error(result.error ?? "No elements generated from Mermaid code")
+          }
+          elements = result.elements
+        } else {
+          const result = await generateDiagram(prompt, type, aiInsertPos.current, isDark)
+          elements = result.elements
+        }
+
         const api = apiRef.current
-        if (api && result.elements.length > 0) {
+        if (api && elements.length > 0) {
           const existing = api.getSceneElements()
-          api.updateScene({ elements: [...existing, ...result.elements] })
-          // Trigger save
+          api.updateScene({ elements: [...existing, ...elements] })
           readyToSave.current && saveNowRef.current?.()
         }
         setShowAIDialog(false)
@@ -1077,6 +1096,55 @@ export function CreativeCanvas() {
         onDelete={deleteCanvas}
       />
 
+      {/* Canvas action toolbar */}
+      {activeCanvasId && (
+        <div
+          className="flex items-center gap-2 px-2 flex-shrink-0"
+          style={{
+            height: 36,
+            borderBottom: "1px solid var(--border-dark)",
+            backgroundColor: "var(--bg-panel)",
+          }}
+        >
+          {!showNotePicker && (
+            <button
+              onClick={() => setShowNotePicker(true)}
+              className="skeuo-btn flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition-all"
+              style={{ color: "var(--accent-primary)", borderRadius: "var(--radius-btn)" }}
+              aria-label="Insert note onto canvas"
+            >
+              <FiFileText size={12} />
+              Insert Note
+            </button>
+          )}
+          {onSplitOpen && (
+            <button
+              onClick={onSplitOpen}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200"
+              style={{
+                backgroundColor: "var(--bg-panel-inset)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-dark)",
+              }}
+              title="Split pane (Ctrl+\\)"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--accent-primary)"
+                e.currentTarget.style.color = "var(--text-on-accent)"
+                e.currentTarget.style.borderColor = "var(--accent-primary)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
+                e.currentTarget.style.color = "var(--text-secondary)"
+                e.currentTarget.style.borderColor = "var(--border-dark)"
+              }}
+            >
+              <FiColumns size={12} />
+              <span>Split</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Canvas area */}
       <div
         className="flex-1 relative min-h-0"
@@ -1138,21 +1206,7 @@ export function CreativeCanvas() {
           </WelcomeScreen.Center>
         </WelcomeScreen>
       </Excalidraw>
-      {/* Insert Note button — positioned top-left to avoid Excalidraw's top-right controls */}
-      {!isTransitioning && activeCanvasId && !showNotePicker && (
-        <button
-          onClick={() => setShowNotePicker(true)}
-          className="skeuo-btn absolute top-3 left-3 z-40 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold transition-all"
-          style={{
-            color: "var(--accent-primary)",
-            borderRadius: "var(--radius-btn)",
-          }}
-          aria-label="Insert note onto canvas"
-        >
-          <FiFileText size={13} />
-          Insert Note
-        </button>
-      )}
+
       {showNotePicker && (
         <NotePickerPanel
           notes={notes}

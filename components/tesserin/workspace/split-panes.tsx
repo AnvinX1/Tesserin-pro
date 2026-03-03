@@ -293,33 +293,35 @@ export function SplitPaneLayout({
           </div>
         ))}
 
-        {/* Floating split button — top-right overlay, always visible */}
-        <button
-          onClick={() => onSplitOpen(primaryViewType)}
-          className="absolute top-2 right-2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
-          style={{
-            backgroundColor: "var(--bg-panel-inset)",
-            color: "var(--text-secondary)",
-            border: "1px solid var(--border-dark)",
-            opacity: 0.7,
-          }}
-          title="Split pane (Ctrl+\\)"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--accent-primary)"
-            e.currentTarget.style.color = "var(--text-on-accent)"
-            e.currentTarget.style.borderColor = "var(--accent-primary)"
-            e.currentTarget.style.opacity = "1"
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
-            e.currentTarget.style.color = "var(--text-secondary)"
-            e.currentTarget.style.borderColor = "var(--border-dark)"
-            e.currentTarget.style.opacity = "0.7"
-          }}
-        >
-          <FiColumns size={13} />
-          <span>Split</span>
-        </button>
+        {/* Floating split button — hidden for canvas (canvas has its own toolbar) */}
+        {splitEnabled && primaryViewType !== "canvas" && (
+          <button
+            onClick={() => onSplitOpen(primaryViewType)}
+            className="absolute top-2 right-2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+            style={{
+              backgroundColor: "var(--bg-panel-inset)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border-dark)",
+              opacity: 0.7,
+            }}
+            title="Split pane (Ctrl+\\)"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--accent-primary)"
+              e.currentTarget.style.color = "var(--text-on-accent)"
+              e.currentTarget.style.borderColor = "var(--accent-primary)"
+              e.currentTarget.style.opacity = "1"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
+              e.currentTarget.style.color = "var(--text-secondary)"
+              e.currentTarget.style.borderColor = "var(--border-dark)"
+              e.currentTarget.style.opacity = "0.7"
+            }}
+          >
+            <FiColumns size={13} />
+            <span>Split</span>
+          </button>
+        )}
       </div>
     )
   }

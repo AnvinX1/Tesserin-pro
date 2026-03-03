@@ -175,9 +175,9 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
                     sideOffset={12}
                     className="font-medium text-xs px-3 py-1.5 rounded-lg"
                     style={{
-                      backgroundColor: "var(--tooltip-bg)",
-                      color: "var(--tooltip-text)",
-                      border: "1px solid var(--tooltip-border)",
+                      backgroundColor: "var(--tooltip-bg, #1c1a17)",
+                      color: "var(--tooltip-text, #f5f0e8)",
+                      border: "1px solid var(--tooltip-border, rgba(255,255,255,0.07))",
                     }}
                   >
                     {item.label}
@@ -230,9 +230,9 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
                 sideOffset={12}
                 className="font-medium text-xs px-3 py-1.5 rounded-lg"
                 style={{
-                  backgroundColor: "var(--tooltip-bg)",
-                  color: "var(--tooltip-text)",
-                  border: "1px solid var(--tooltip-border)",
+                  backgroundColor: "var(--tooltip-bg, #1c1a17)",
+                  color: "var(--tooltip-text, #f5f0e8)",
+                  border: "1px solid var(--tooltip-border, rgba(255,255,255,0.07))",
                 }}
               >
                 Expand sidebar

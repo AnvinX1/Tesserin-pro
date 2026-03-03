@@ -932,6 +932,113 @@ async def list_templates() -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# CANVAS DIAGRAM GENERATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+@mcp.tool()
+async def create_diagram(
+    description: str = "",
+    diagram_type: str = "auto",
+    canvas_name: str = "",
+    mermaid_code: str = "",
+) -> str:
+    """Generate a Mermaid diagram on the Tesserin canvas.
+
+    Creates a new canvas with an AI-generated diagram, immediately visible in
+    the Tesserin Canvas tab.  Supports flowchart, sequence diagram, and mindmap.
+
+    Args:
+        description:  Natural-language description of what the diagram should show.
+                      Example: "OAuth2 authorization code flow with PKCE"
+        diagram_type: One of 'flowchart', 'sequence', 'mindmap', or 'auto'.
+                      'auto' lets the AI pick the best type.
+        canvas_name:  Optional name for the canvas tab (auto-generated if blank).
+        mermaid_code: Optional raw Mermaid code to render directly, bypassing
+                      AI generation.  When provided, 'description' is ignored.
+
+    Returns:
+        A summary with the canvas ID, name, element count, diagram type,
+        and the raw Mermaid code that was used.
+    """
+    logger.info(
+        "create_diagram type=%r name=%r has_code=%s",
+        diagram_type, canvas_name, bool(mermaid_code),
+    )
+
+    if not description.strip() and not mermaid_code.strip():
+        return "Error: either 'description' or 'mermaid_code' is required."
+
+    desc_safe = _safe_text(description, "description")
+    code_safe = _safe_text(mermaid_code, "mermaid_code") if mermaid_code else None
+
+    allowed_types = {"auto", "flowchart", "sequence", "mindmap"}
+    dtype = diagram_type.strip().lower() if diagram_type.strip().lower() in allowed_types else "auto"
+
+    payload: dict = {"type": dtype}
+    if desc_safe:
+        payload["prompt"] = desc_safe
+    if code_safe:
+        payload["mermaid_code"] = code_safe
+    if canvas_name.strip():
+        n = _safe_text(canvas_name.strip(), "canvas_name")
+        if n:
+            payload["canvas_name"] = n[:120]
+
+    try:
+        data = await api_post("/api/canvas/diagram", payload)
+
+        canvas_id    = data.get("canvas_id", "?")
+        canvas_n     = data.get("canvas_name", "?")
+        elem_count   = data.get("element_count", 0)
+        dtype_out    = data.get("diagram_type", "?")
+        mermaid_out  = data.get("mermaid_code", "")
+
+        lines = [
+            f"✅ Diagram created successfully!",
+            f"",
+            f"Canvas ID   : {canvas_id}",
+            f"Canvas Name : {canvas_n}",
+            f"Type        : {dtype_out}",
+            f"Elements    : {elem_count}",
+            f"",
+            f"Open the Canvas tab in Tesserin to view it.",
+            f"",
+            f"--- Mermaid Code ---",
+            mermaid_out,
+        ]
+        return "\n".join(lines)
+
+    except httpx.HTTPStatusError as e:
+        logger.error("create_diagram HTTP error", exc_info=True)
+        return _http_error(e)
+    except Exception as e:
+        logger.error("create_diagram failed", exc_info=True)
+        return f"Error: {e}"
+
+
+@mcp.tool()
+async def list_canvases() -> str:
+    """List all canvases in the Tesserin vault."""
+    logger.info("list_canvases")
+    try:
+        data     = await api_get("/api/canvas/list")
+        canvases = data.get("canvases", [])
+        if not canvases:
+            return "No canvases found. Use create_diagram to generate one."
+        lines = [
+            f"- {c.get('name', '?')} (id: {c.get('id', '?')}, updated: {c.get('updated_at', '?')[:10]})"
+            for c in canvases
+        ]
+        return f"{len(canvases)} canvas(es):\n\n" + "\n".join(lines)
+    except httpx.HTTPStatusError as e:
+        logger.error("list_canvases HTTP error", exc_info=True)
+        return _http_error(e)
+    except Exception as e:
+        logger.error("list_canvases failed", exc_info=True)
+        return f"Error: {e}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # HEALTH
 # ══════════════════════════════════════════════════════════════════════════════
 

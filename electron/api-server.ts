@@ -17,10 +17,12 @@
 
 import http from "http"
 import { randomBytes, timingSafeEqual } from "crypto"
+import { randomUUID } from "crypto"
 import * as db from "./database"
 import * as ai from "./ai-service"
 import * as kb from "./knowledge-base"
 import { cloudAgentManager, type AgentPermission } from "./cloud-agents"
+import { parseMermaid, mermaidSystemPrompt } from "./mermaid-parser"
 
 /* ================================================================== */
 /*  API Key Management                                                 */
@@ -681,6 +683,81 @@ const routes: Route[] = [
     handler: async (_req, res, params) => {
       const tools = cloudAgentManager.getAgentTools(params.id)
       json(res, 200, { tools })
+    },
+  },
+
+  // ── Canvas Diagram Generation (MCP Agent) ─────────────────────────
+  {
+    method: "POST",
+    pattern: "/api/canvas/diagram",
+    permission: "ai:use",
+    handler: async (req, res) => {
+      const body = await parseBody(req)
+      const prompt: string = body.prompt || ""
+      const type: string = body.type || "auto"
+      const canvasName: string = body.canvas_name || ""
+      let mermaidCode: string = body.mermaid_code || ""
+
+      if (!mermaidCode && !prompt.trim()) {
+        return json(res, 400, { error: "Either 'prompt' or 'mermaid_code' is required" })
+      }
+
+      try {
+        // Generate Mermaid code via AI if not provided directly
+        if (!mermaidCode) {
+          const typeHint = type === "auto" ? "" : ` Create a ${type} diagram.`
+          const messages = [
+            { role: "system", content: mermaidSystemPrompt() },
+            { role: "user", content: `${prompt}.${typeHint}` },
+          ]
+          const result = await ai.chat(messages)
+          mermaidCode = result.content.trim()
+          // Strip accidental markdown fences
+          mermaidCode = mermaidCode.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/, "").trim()
+        }
+
+        // Convert Mermaid → Excalidraw elements
+        const { elements, diagramType, error: parseError } = parseMermaid(mermaidCode, true, 50, 50)
+
+        if (parseError || elements.length === 0) {
+          return json(res, 422, {
+            error: `Could not parse Mermaid code: ${parseError ?? "no elements generated"}`,
+            mermaid_code: mermaidCode,
+          })
+        }
+
+        // Create canvas in SQLite
+        const name = canvasName.trim() ||
+          `${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)} — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+        const id = randomUUID()
+        db.createCanvas({
+          id,
+          name,
+          elements: JSON.stringify(elements),
+          appState: JSON.stringify({ theme: "dark", viewBackgroundColor: "#121212" }),
+        })
+
+        json(res, 201, {
+          canvas_id: id,
+          canvas_name: name,
+          element_count: elements.length,
+          diagram_type: diagramType,
+          mermaid_code: mermaidCode,
+        })
+      } catch (err) {
+        console.error("[API] /api/canvas/diagram error:", err)
+        json(res, 500, { error: err instanceof Error ? err.message : String(err) })
+      }
+    },
+  },
+  // GET to list diagram canvases (alias listing all canvases)
+  {
+    method: "GET",
+    pattern: "/api/canvas/list",
+    permission: "notes:read",
+    handler: async (_req, res) => {
+      const canvases = db.listCanvases()
+      json(res, 200, { canvases })
     },
   },
 

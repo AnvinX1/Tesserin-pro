@@ -148,12 +148,12 @@ function AppContent() {
     }, [panels])
 
     // Render callback for universal panes
-    const renderView = useCallback((viewType: string, props: PaneRenderProps) => {
+    const renderView = useCallback((viewType: string, props: PaneRenderProps) => { // eslint-disable-line react-hooks/exhaustive-deps
         switch (viewType) {
             case "notes":
                 return <MarkdownEditor noteId={props.noteId} onSelectNote={props.onSelectNote} isSecondary={props.isSecondary} />
             case "canvas":
-                return <CreativeCanvas />
+                return <CreativeCanvas onSplitOpen={splitState.isActive ? undefined : () => openSplit("canvas")} />
             case "graph":
                 return <D3GraphView />
             case "settings":
@@ -164,7 +164,7 @@ function AppContent() {
                 return null
             }
         }
-    }, [panels])
+    }, [panels, splitState.isActive, openSplit])
 
     // Feature toggles — control which features are shown
     const [features, setFeatures] = useState<Record<string, boolean>>({})

@@ -23,6 +23,7 @@ import {
   buildFreeformElements,
 } from "./canvas-elements"
 import { getOllamaEndpoint } from "./ollama-config"
+import { parseMermaid, MERMAID_SYSTEM_PROMPT } from "./mermaid-to-excalidraw"
 
 /* ── Types ───────────────────────────────────────────── */
 
@@ -32,6 +33,7 @@ export type DiagramType =
   | "orgchart"
   | "sequence"
   | "freeform"
+  | "mermaid"
   | "auto"
 
 interface GenerateResult {
@@ -138,6 +140,26 @@ async function callAI(
 }
 
 /* ── Public API ──────────────────────────────────────── */
+
+/**
+ * Generate raw Mermaid diagram code from a text prompt.
+ * Returns the Mermaid source string (flowchart / sequence / mindmap).
+ */
+export async function generateMermaidCode(
+  prompt: string,
+  type: "flowchart" | "sequence" | "mindmap" | "auto" = "auto",
+  model?: string,
+): Promise<string> {
+  const typeHint = type === "auto" ? "" : ` Create a ${type} diagram.`
+  const messages = [
+    { role: "system", content: MERMAID_SYSTEM_PROMPT },
+    { role: "user", content: `${prompt}.${typeHint}` },
+  ]
+  let code = await callAI(messages, model)
+  // Strip any accidental markdown fences
+  code = code.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/, "").trim()
+  return code
+}
 
 /**
  * Generate diagram elements from a text prompt.
