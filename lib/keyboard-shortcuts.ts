@@ -40,7 +40,13 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: "quick-capture",     label: "Quick Capture",            defaultKeys: "Ctrl+Shift+D", category: "panels" },
   { id: "references",        label: "Reference Manager",        defaultKeys: "Ctrl+Shift+R", category: "panels" },
   { id: "toggle-split",      label: "Toggle Split View",        defaultKeys: "Ctrl+\\",      category: "editor" },
-
+  // Window management — handled in the Electron main process via before-input-event
+  { id: "window-fullscreen", label: "Toggle Full Screen",        defaultKeys: "F11",          category: "navigation" },
+  { id: "window-minimize",   label: "Minimize Window",           defaultKeys: "Ctrl+M",       category: "navigation" },
+  { id: "window-maximize",   label: "Maximize / Restore Window", defaultKeys: "Ctrl+Shift+F", category: "navigation" },
+  // Split pane divider keyboard resize — handled in SplitPaneLayout
+  { id: "split-shrink",      label: "Shrink Primary Pane",       defaultKeys: "Ctrl+[",       category: "editor" },
+  { id: "split-grow",        label: "Grow Primary Pane",         defaultKeys: "Ctrl+]",       category: "editor" },
 ]
 
 /* ------------------------------------------------------------------ */

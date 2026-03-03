@@ -235,6 +235,22 @@ export function SplitPaneLayout({
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Keyboard-driven divider resize: Ctrl+[ shrinks primary, Ctrl+] grows primary
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isActive || !e.ctrlKey || e.shiftKey || e.altKey) return
+      if (e.key === '[') {
+        e.preventDefault()
+        setSplitRatio((r) => Math.max(0.2, parseFloat((r - 0.05).toFixed(2))))
+      } else if (e.key === ']') {
+        e.preventDefault()
+        setSplitRatio((r) => Math.min(0.8, parseFloat((r + 0.05).toFixed(2))))
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isActive])
+
   // Keep-alive: track every view that has been opened so it stays mounted
   const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([primaryViewType]))
   useEffect(() => {

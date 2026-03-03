@@ -55,6 +55,7 @@ function createWindow() {
         titleBarStyle: 'hiddenInset',
         trafficLightPosition: { x: 16, y: 16 },
         backgroundColor: '#050505',
+        show: false,
         icon: electron_1.nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path_1.default.join(__dirname, 'preload.js'),
@@ -71,6 +72,10 @@ function createWindow() {
     else {
         mainWindow.loadFile(path_1.default.join(__dirname, '../../dist/index.html'));
     }
+    // Show window only after the first paint — eliminates the grey flash on startup
+    mainWindow.once('ready-to-show', () => {
+        mainWindow?.show();
+    });
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
