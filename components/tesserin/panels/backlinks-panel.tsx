@@ -171,16 +171,13 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
           className="px-4 py-3 border-b flex items-center gap-2"
           style={{ borderColor: "var(--border-dark)" }}
         >
-          <FiLink2 size={16} style={{ color: "var(--accent-primary)" }} />
+          <FiLink2 size={16} style={{ color: "var(--text-tertiary)" }} />
           <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             Backlinks
           </h3>
           <span
-            className="ml-auto text-xs px-2 py-0.5 rounded-full"
-            style={{
-              backgroundColor: "var(--bg-panel-inset)",
-              color: "var(--text-tertiary)",
-            }}
+            className="ml-auto text-[11px]"
+            style={{ color: "var(--text-tertiary)" }}
           >
             {totalCount}
           </span>
@@ -222,7 +219,7 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
                     className="w-full text-left px-4 py-2.5 hover:bg-white/10 transition-colors group"
                   >
                     <div className="flex items-center gap-2">
-                      <FiFileText size={13} style={{ color: "var(--accent-primary)", opacity: 0.7 }} />
+                      <FiFileText size={13} style={{ color: "var(--text-tertiary)", opacity: 0.7 }} />
                       <span
                         className="text-sm font-medium truncate flex-1"
                         style={{ color: "var(--text-primary)" }}
@@ -233,8 +230,8 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
                         <span
                           className="text-[10px] px-1.5 rounded"
                           style={{
-                            backgroundColor: "rgba(250, 204, 21, 0.15)",
-                            color: "var(--accent-primary)",
+                            backgroundColor: "var(--bg-panel-inset)",
+                            color: "var(--text-tertiary)",
                           }}
                         >
                           ×{bl.count}
@@ -310,7 +307,7 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
                         {isUnresolved ? (
                           <FiExternalLink size={13} style={{ color: "var(--text-tertiary)" }} />
                         ) : (
-                          <FiFileText size={13} style={{ color: "var(--accent-primary)", opacity: 0.7 }} />
+                          <FiFileText size={13} style={{ color: "var(--text-tertiary)", opacity: 0.7 }} />
                         )}
                         <span
                           className={`text-sm truncate flex-1 ${isUnresolved ? "italic" : "font-medium"}`}
@@ -373,11 +370,11 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
                 {blockRefs.map(({ blockId, blockContent, refs }) => (
                   <div key={blockId} className="px-4 py-2">
                     <div
-                      className="text-xs px-2 py-1 rounded mb-1.5 truncate"
+                      className="text-xs px-2 py-1 rounded mb-1.5 truncate font-mono"
                       style={{
-                        backgroundColor: "rgba(250, 204, 21, 0.08)",
-                        color: "var(--accent-primary)",
-                        border: "1px solid rgba(250, 204, 21, 0.15)",
+                        backgroundColor: "var(--bg-panel-inset)",
+                        color: "var(--text-tertiary)",
+                        border: "1px solid var(--border-dark)",
                       }}
                     >
                       ^{blockId}: {blockContent}
@@ -467,7 +464,7 @@ export function BacklinksPanel({ compact = false }: BacklinksPanelProps) {
                     </p>
                     <p
                       className="text-[10px] mt-0.5 pl-5"
-                      style={{ color: "var(--accent-primary)", opacity: 0.6 }}
+                      style={{ color: "var(--text-tertiary)", opacity: 0.7 }}
                     >
                       Line {mention.line + 1} — click to navigate, then add [[{selectedNote.title}]]
                     </p>

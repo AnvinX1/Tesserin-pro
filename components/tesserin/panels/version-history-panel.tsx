@@ -182,16 +182,13 @@ export function VersionHistoryPanel() {
         className="px-4 py-3 border-b flex items-center gap-2"
         style={{ borderColor: "var(--border-dark)" }}
       >
-        <FiClock size={16} style={{ color: "var(--accent-primary)" }} />
+        <FiClock size={16} style={{ color: "var(--text-tertiary)" }} />
         <h3 className="text-sm font-semibold flex-1" style={{ color: "var(--text-primary)" }}>
           Version History
         </h3>
         <span
-          className="text-xs px-2 py-0.5 rounded-full"
-          style={{
-            backgroundColor: "var(--bg-panel-inset)",
-            color: "var(--text-tertiary)",
-          }}
+          className="text-[11px]"
+          style={{ color: "var(--text-tertiary)" }}
         >
           {versions.length}
         </span>
@@ -259,10 +256,8 @@ export function VersionHistoryPanel() {
                       <div
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{
-                          backgroundColor: isLatest
-                            ? "var(--accent-primary)"
-                            : "var(--text-tertiary)",
-                          opacity: isLatest ? 1 : 0.3,
+                          backgroundColor: "var(--text-tertiary)",
+                          opacity: isLatest ? 0.8 : 0.3,
                         }}
                       />
                       <span
@@ -286,7 +281,7 @@ export function VersionHistoryPanel() {
 
                     {version.label && (
                       <div className="flex items-center gap-1 mt-1 ml-4">
-                        <FiTag size={10} style={{ color: "var(--accent-primary)", opacity: 0.5 }} />
+                        <FiTag size={10} style={{ color: "var(--text-tertiary)", opacity: 0.5 }} />
                         <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>
                           {formatVersionTime(version.createdAt)}
                         </span>
@@ -311,8 +306,9 @@ export function VersionHistoryPanel() {
                           }}
                           className="flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors hover:bg-white/10"
                           style={{
-                            backgroundColor: "rgba(250, 204, 21, 0.1)",
-                            color: "var(--accent-primary)",
+                            backgroundColor: "var(--bg-panel-inset)",
+                            color: "var(--text-secondary)",
+                            border: "1px solid var(--border-dark)",
                           }}
                         >
                           <FiRotateCcw size={10} /> Restore

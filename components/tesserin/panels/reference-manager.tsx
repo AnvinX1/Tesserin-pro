@@ -5,9 +5,7 @@ import {
   FiBook, FiPlus, FiSearch, FiTag, FiTrash2, FiCopy, FiCheck,
   FiChevronDown, FiChevronRight, FiFileText, FiExternalLink,
   FiUpload, FiDownload, FiEdit2, FiX, FiMessageSquare,
-  FiBookOpen,
 } from "react-icons/fi"
-import { SkeuoPanel } from "../core/skeuo-panel"
 import {
   parseBibTeX,
   formatCitation,
@@ -239,33 +237,40 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center"
+      className="fixed inset-0 z-[90] flex items-start justify-center pt-[6vh]"
       onClick={onClose}
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(4px)" }}
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)" }}
     >
-      <SkeuoPanel
-        className="w-full max-w-3xl h-[80vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      <div
+        className="w-full max-w-3xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+        style={{
+          maxHeight: "82vh",
+          backgroundColor: "var(--bg-panel)",
+          border: "1px solid var(--border-mid)",
+          borderRadius: 16,
+          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+        }}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          className="px-5 py-3.5 border-b flex items-center gap-3"
+          className="px-5 py-3.5 border-b flex items-center gap-3 flex-shrink-0"
           style={{ borderColor: "var(--border-dark)" }}
         >
-          <FiBookOpen size={20} style={{ color: "var(--accent-primary)" }} />
-          <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-            Reference Manager
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            References
           </h2>
 
-          <div className="flex items-center gap-1 ml-3 text-xs">
+          <div className="flex items-center gap-1 text-xs">
             {(["library", "import"] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
-                className={`px-2.5 py-1 rounded-lg capitalize ${viewMode === mode ? "active" : ""}`}
+                className="px-2.5 py-1 rounded-lg capitalize transition-colors hover:bg-white/10"
                 style={{
-                  backgroundColor: viewMode === mode ? "var(--accent-primary)" : "transparent",
-                  color: viewMode === mode ? "var(--text-on-accent)" : "var(--text-secondary)",
+                  backgroundColor: viewMode === mode ? "var(--bg-panel-inset)" : "transparent",
+                  color: viewMode === mode ? "var(--text-primary)" : "var(--text-tertiary)",
+                  border: viewMode === mode ? "1px solid var(--border-dark)" : "1px solid transparent",
                 }}
               >
                 {mode}
@@ -279,7 +284,12 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
           <div className="relative">
             <button
               onClick={() => setShowStyleMenu(!showStyleMenu)}
-              className="skeuo-btn px-2.5 py-1 rounded-lg text-xs flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 transition-colors hover:bg-white/10"
+              style={{
+                backgroundColor: "var(--bg-panel-inset)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-dark)",
+              }}
             >
               {citationStyle.toUpperCase()} <FiChevronDown size={10} />
             </button>
@@ -301,7 +311,7 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                     }}
                     className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/10 transition-colors"
                     style={{
-                      color: s === citationStyle ? "var(--accent-primary)" : "var(--text-secondary)",
+                      color: s === citationStyle ? "var(--text-primary)" : "var(--text-secondary)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -311,14 +321,15 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
             )}
           </div>
 
-          <span
-            className="text-xs px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: "var(--bg-panel-inset)", color: "var(--text-tertiary)" }}
-          >
+          <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
             {library.length} refs
           </span>
 
-          <button onClick={onClose} className="skeuo-btn px-2 py-1 text-xs rounded-lg">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+            style={{ color: "var(--text-tertiary)" }}
+          >
             <FiX size={14} />
           </button>
         </div>
@@ -330,7 +341,12 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="skeuo-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/10"
+                  style={{
+                    backgroundColor: "var(--bg-panel-inset)",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border-dark)",
+                  }}
                 >
                   <FiUpload size={14} />
                   Import .bib File
@@ -344,8 +360,12 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                 />
                 <button
                   onClick={handleExportLibrary}
-                  className="skeuo-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ color: "var(--text-secondary)" }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/10"
+                  style={{
+                    backgroundColor: "var(--bg-panel-inset)",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border-dark)",
+                  }}
                 >
                   <FiDownload size={14} />
                   Export Library
@@ -377,8 +397,12 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                 />
                 <button
                   onClick={handleImportBibtex}
-                  className="skeuo-btn px-4 py-2 rounded-xl text-sm font-semibold self-end"
-                  style={{ color: "var(--accent-primary)" }}
+                  className="px-4 py-2 rounded-xl text-sm font-medium self-end transition-colors hover:bg-white/10"
+                  style={{
+                    backgroundColor: "var(--bg-panel-inset)",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border-dark)",
+                  }}
                 >
                   <FiPlus size={14} className="inline mr-1" />
                   Import {bibtexInput ? `(${parseBibTeX(bibtexInput).length} entries)` : ""}
@@ -420,10 +444,11 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                     {filterTag && (
                       <button
                         onClick={() => setFilterTag(null)}
-                        className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                        className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors hover:bg-white/10"
                         style={{
-                          backgroundColor: "rgba(250, 204, 21, 0.15)",
-                          color: "var(--accent-primary)",
+                          backgroundColor: "var(--bg-panel-inset)",
+                          color: "var(--text-tertiary)",
+                          border: "1px solid var(--border-dark)",
                         }}
                       >
                         <FiX size={8} /> clear
@@ -433,14 +458,11 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                       <button
                         key={tag}
                         onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        className="text-[10px] px-1.5 py-0.5 rounded transition-colors hover:bg-white/10"
                         style={{
-                          backgroundColor: filterTag === tag
-                            ? "var(--accent-primary)"
-                            : "var(--bg-panel-inset)",
-                          color: filterTag === tag
-                            ? "var(--text-on-accent)"
-                            : "var(--text-tertiary)",
+                          backgroundColor: "var(--bg-panel-inset)",
+                          color: filterTag === tag ? "var(--text-primary)" : "var(--text-tertiary)",
+                          border: filterTag === tag ? "1px solid var(--border-mid)" : "1px solid var(--border-dark)",
                         }}
                       >
                         {tag}
@@ -506,7 +528,7 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                               {isCited && (
                                 <span
                                   className="w-1.5 h-1.5 rounded-full"
-                                  style={{ backgroundColor: "var(--accent-primary)" }}
+                                  style={{ backgroundColor: "var(--text-tertiary)", opacity: 0.6 }}
                                   title="Cited in current note"
                                 />
                               )}
@@ -528,15 +550,16 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
                 >
                   <button
                     onClick={() => setViewMode("import")}
-                    className="skeuo-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs"
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/10"
+                    style={{ color: "var(--text-secondary)" }}
                   >
                     <FiPlus size={12} /> Import
                   </button>
                   {currentNoteCitations.length > 0 && (
                     <button
                       onClick={handleGenerateBibliography}
-                      className="skeuo-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs"
-                      style={{ color: "var(--accent-primary)" }}
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/10"
+                      style={{ color: "var(--text-secondary)" }}
                       title="Generate bibliography for current note"
                     >
                       <FiBook size={12} /> Bibliography
@@ -590,7 +613,7 @@ export function ReferenceManager({ isOpen, onClose, onInsertCitation }: Referenc
             </div>
           )}
         </div>
-      </SkeuoPanel>
+      </div>
     </div>
   )
 }
@@ -656,23 +679,36 @@ function ReferenceDetail({
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => onInsert(entry)}
-          className="skeuo-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-          style={{ color: "var(--accent-primary)" }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-white/10"
+          style={{
+            backgroundColor: "var(--bg-panel-inset)",
+            color: copiedKey === entry.key ? "#4ade80" : "var(--text-secondary)",
+            border: "1px solid var(--border-dark)",
+          }}
         >
           {copiedKey === entry.key ? <FiCheck size={12} /> : <FiEdit2 size={12} />}
           Insert [@{entry.key}]
         </button>
         <button
           onClick={() => onCopy(entry)}
-          className="skeuo-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/10"
+          style={{
+            backgroundColor: "var(--bg-panel-inset)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-dark)",
+          }}
         >
           <FiCopy size={12} />
           Copy Citation
         </button>
         <button
           onClick={() => onDelete(entry.key)}
-          className="skeuo-btn flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs"
-          style={{ color: "var(--text-tertiary)" }}
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-red-500/10"
+          style={{
+            backgroundColor: "var(--bg-panel-inset)",
+            color: "var(--text-tertiary)",
+            border: "1px solid var(--border-dark)",
+          }}
         >
           <FiTrash2 size={12} />
         </button>
@@ -723,7 +759,7 @@ function ReferenceDetail({
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs flex items-center gap-1 underline"
-              style={{ color: "var(--accent-primary)" }}
+              style={{ color: "var(--text-secondary)" }}
             >
               <FiExternalLink size={11} />
               DOI: {entry.doi}
@@ -735,7 +771,7 @@ function ReferenceDetail({
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs flex items-center gap-1 underline"
-              style={{ color: "var(--accent-primary)" }}
+              style={{ color: "var(--text-secondary)" }}
             >
               <FiExternalLink size={11} />
               URL
@@ -771,7 +807,12 @@ function ReferenceDetail({
           </h4>
           <button
             onClick={() => setShowAnnotationForm(!showAnnotationForm)}
-            className="skeuo-btn px-2 py-1 rounded text-[10px] flex items-center gap-1"
+            className="px-2 py-1 rounded text-[10px] flex items-center gap-1 transition-colors hover:bg-white/10"
+            style={{
+              backgroundColor: "var(--bg-panel-inset)",
+              color: "var(--text-tertiary)",
+              border: "1px solid var(--border-dark)",
+            }}
           >
             <FiPlus size={10} /> Add
           </button>
@@ -827,8 +868,12 @@ function ReferenceDetail({
                     setShowAnnotationForm(false)
                   }
                 }}
-                className="skeuo-btn px-3 py-1 rounded text-[10px] font-medium"
-                style={{ color: "var(--accent-primary)" }}
+                className="px-3 py-1 rounded text-[10px] font-medium transition-colors hover:bg-white/10"
+                style={{
+                  backgroundColor: "var(--bg-panel-inset)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border-dark)",
+                }}
               >
                 Save
               </button>
