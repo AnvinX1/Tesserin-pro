@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useRef, useEffect } from "react"
-import { FiColumns, FiX, FiArrowRight, FiArrowDown } from "react-icons/fi"
+import { FiX, FiArrowRight, FiArrowDown } from "react-icons/fi"
 
 /**
  * Universal Split Panes
@@ -196,52 +196,43 @@ function PaneHeader({
 /*  SplitPaneLayout — the universal workspace container                */
 /* ================================================================== */
 
-interface SplitPaneLayoutProps {
-  /** Available workspace views */
+export interface SplitPaneLayoutProps {
   views: ViewDefinition[]
-  /** Currently active view in the primary pane (synced w/ LeftDock) */
   primaryViewType: string
-  /** Called when the primary pane view changes (updates LeftDock) */
-  onPrimaryViewChange: (viewType: string) => void
-  /** Render callback — returns the component for a given view type */
   renderView: (viewType: string, props: PaneRenderProps) => React.ReactNode
-  /** Split state from useSplitPanes */
   splitState: SplitState
-  /** Open a split pane */
-  onSplitOpen: (viewType?: string) => void
-  /** Close the secondary pane */
   onSplitClose: () => void
-  /** Change the secondary pane's view */
   onSecondaryViewChange: (viewType: string) => void
-  /** Toggle horizontal / vertical split direction */
-  onDirectionToggle: () => void
-  /** Whether splitting is enabled (feature flag) */
+  onDirectionToggle?: () => void
+  // API-compat stubs (no longer used internally):
+  onSplitOpen?: (viewType?: string) => void
+  onPrimaryViewChange?: (viewType: string) => void
   splitEnabled?: boolean
 }
 
 export function SplitPaneLayout({
   views,
   primaryViewType,
-  onPrimaryViewChange,
   renderView,
   splitState,
-  onSplitOpen,
   onSplitClose,
   onSecondaryViewChange,
   onDirectionToggle,
-  splitEnabled = true,
 }: SplitPaneLayoutProps) {
   const [splitRatio, setSplitRatio] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Keyboard-driven divider resize: Ctrl+Left/Right (or Up/Down) nudges the divider
+  const { isActive, direction } = splitState
+  const isHorizontal = direction === "horizontal"
+
+  // Keyboard-driven divider nudge: Ctrl+Arrow when split is open
   useEffect(() => {
+    if (!isActive) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!splitState.isActive || !e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return
-      const isHoriz = splitState.direction === 'horizontal'
-      const shrinkKey = isHoriz ? 'ArrowLeft' : 'ArrowUp'
-      const growKey = isHoriz ? 'ArrowRight' : 'ArrowDown'
+      if (!e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return
+      const shrinkKey = isHorizontal ? 'ArrowLeft' : 'ArrowUp'
+      const growKey = isHorizontal ? 'ArrowRight' : 'ArrowDown'
       if (e.key === shrinkKey) {
         e.preventDefault()
         setSplitRatio((r) => Math.max(0.2, parseFloat((r - 0.05).toFixed(2))))
@@ -252,21 +243,7 @@ export function SplitPaneLayout({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [splitState.isActive, splitState.direction])
-
-  // Keep-alive: track every view that has been opened so it stays mounted
-  const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([primaryViewType]))
-  useEffect(() => {
-    setMountedViews((prev) => {
-      if (prev.has(primaryViewType)) return prev
-      const next = new Set(prev)
-      next.add(primaryViewType)
-      return next
-    })
-  }, [primaryViewType])
-
-  const { isActive, direction } = splitState
-  const isHorizontal = direction === "horizontal"
+  }, [isActive, isHorizontal])
 
   /* ── Divider drag ── */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -276,7 +253,6 @@ export function SplitPaneLayout({
 
   useEffect(() => {
     if (!isDragging) return
-
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
@@ -287,9 +263,7 @@ export function SplitPaneLayout({
       if (Math.abs(ratio - 0.5) < 0.03) ratio = 0.5
       setSplitRatio(ratio)
     }
-
     const handleMouseUp = () => setIsDragging(false)
-
     window.addEventListener("mousemove", handleMouseMove)
     window.addEventListener("mouseup", handleMouseUp)
     return () => {
@@ -298,49 +272,11 @@ export function SplitPaneLayout({
     }
   }, [isDragging, isHorizontal])
 
-  /* ── Single pane mode ── */
+  /* ── Single pane — render directly, no wrappers ── */
   if (!isActive) {
     return (
-      <div className="relative w-full h-full">
-        {Array.from(mountedViews).map((viewId) => (
-          <div
-            key={viewId}
-            className="absolute inset-0"
-            style={{ display: viewId === primaryViewType ? "contents" : "none" }}
-          >
-            {renderView(viewId, { paneId: "primary" })}
-          </div>
-        ))}
-
-        {/* Floating split button — hidden for canvas (canvas has its own toolbar) */}
-        {splitEnabled && primaryViewType !== "canvas" && (
-          <button
-            onClick={() => onSplitOpen(primaryViewType)}
-            className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
-            style={{
-              backgroundColor: "var(--bg-panel-inset)",
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border-dark)",
-              opacity: 0.7,
-            }}
-            title="Split pane (Ctrl+\\)"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--accent-primary)"
-              e.currentTarget.style.color = "var(--text-on-accent)"
-              e.currentTarget.style.borderColor = "var(--accent-primary)"
-              e.currentTarget.style.opacity = "1"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
-              e.currentTarget.style.color = "var(--text-secondary)"
-              e.currentTarget.style.borderColor = "var(--border-dark)"
-              e.currentTarget.style.opacity = "0.7"
-            }}
-          >
-            <FiColumns size={13} />
-            <span>Split</span>
-          </button>
-        )}
+      <div className="w-full h-full">
+        {renderView(primaryViewType, { paneId: "primary" })}
       </div>
     )
   }
@@ -355,75 +291,41 @@ export function SplitPaneLayout({
       className={`w-full h-full flex ${isHorizontal ? "flex-row" : "flex-col"}`}
       style={{ cursor: isDragging ? (isHorizontal ? "col-resize" : "row-resize") : undefined }}
     >
-      {/* Primary pane */}
+      {/* Primary pane — no header; active tab shown in LeftDock */}
       <div
-        className="flex flex-col overflow-hidden min-w-0 min-h-0"
-        style={{
-          [isHorizontal ? "width" : "height"]: primarySize,
-          transition: isDragging ? "none" : "all 0.15s ease",
-        }}
+        className="overflow-hidden min-w-0 min-h-0"
+        style={{ [isHorizontal ? "width" : "height"]: primarySize, flexShrink: 0 }}
       >
-        <PaneHeader
-          viewType={primaryViewType}
-          views={views}
-          onViewChange={onPrimaryViewChange}
-          onToggleDirection={onDirectionToggle}
-          direction={direction}
-        />
-        <div className="flex-1 min-h-0 overflow-hidden relative">
-          {Array.from(mountedViews).map((viewId) => (
-            <div
-              key={viewId}
-              className="absolute inset-0"
-              style={{ display: viewId === primaryViewType ? "contents" : "none" }}
-            >
-              {renderView(viewId, { paneId: "primary" })}
-            </div>
-          ))}
-        </div>
+        {renderView(primaryViewType, { paneId: "primary" })}
       </div>
 
       {/* Divider */}
       <div
-        className={`relative flex-shrink-0 group ${isHorizontal ? "w-[3px] cursor-col-resize" : "h-[3px] cursor-row-resize"
-          }`}
+        className={`relative flex-shrink-0 group ${
+          isHorizontal ? "w-[3px] cursor-col-resize" : "h-[3px] cursor-row-resize"
+        }`}
         onMouseDown={handleMouseDown}
         style={{
           backgroundColor: isDragging ? "var(--accent-primary)" : "var(--border-dark)",
           transition: isDragging ? "none" : "background-color 0.15s",
         }}
       >
-        {/* Larger hit target */}
-        <div
-          className={`absolute ${isHorizontal
-            ? "inset-y-0 -left-1.5 -right-1.5"
-            : "inset-x-0 -top-1.5 -bottom-1.5"
-            }`}
-        />
-        {/* Drag handle dots */}
-        <div
-          className={`absolute ${isHorizontal
+        <div className={`absolute ${isHorizontal ? "inset-y-0 -left-1.5 -right-1.5" : "inset-x-0 -top-1.5 -bottom-1.5"}`} />
+        <div className={`absolute ${
+          isHorizontal
             ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5"
             : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-row gap-0.5"
-            } opacity-0 group-hover:opacity-100 transition-opacity`}
-        >
+        } opacity-0 group-hover:opacity-100 transition-opacity`}>
           {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-1 h-1 rounded-full"
-              style={{ backgroundColor: "var(--text-tertiary)" }}
-            />
+            <div key={i} className="w-1 h-1 rounded-full" style={{ backgroundColor: "var(--text-tertiary)" }} />
           ))}
         </div>
       </div>
 
-      {/* Secondary pane */}
+      {/* Secondary pane — header with view-switcher + direction + close */}
       <div
         className="flex flex-col overflow-hidden min-w-0 min-h-0"
-        style={{
-          [isHorizontal ? "width" : "height"]: secondarySize,
-          transition: isDragging ? "none" : "all 0.15s ease",
-        }}
+        style={{ [isHorizontal ? "width" : "height"]: secondarySize, flexShrink: 0 }}
       >
         <PaneHeader
           viewType={splitState.secondaryViewType}

@@ -322,7 +322,15 @@ function AppContent() {
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* ── Left Dock ── */}
-                    <LeftDock activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <LeftDock
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        splitActive={splitState.isActive}
+                        onSplitOpen={() => openSplit()}
+                        onSplitClose={closeSplit}
+                        splitDirection={splitState.direction}
+                        onSplitDirection={toggleDirection}
+                    />
 
                     {/* ── Centre Stage ── */}
                     <main className="flex-1 flex flex-col min-w-0 m-3 relative z-10">

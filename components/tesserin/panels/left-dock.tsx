@@ -20,6 +20,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip"
 import { getSetting } from "@/lib/storage-client"
+import { FiColumns, FiArrowRight, FiArrowDown } from "react-icons/fi"
 
 /**
  * LeftDock
@@ -51,6 +52,11 @@ export type TabId = CoreTabId | (string & {})
 interface LeftDockProps {
   activeTab: TabId
   setActiveTab: (tab: TabId) => void
+  splitActive?: boolean
+  onSplitOpen?: () => void
+  onSplitClose?: () => void
+  splitDirection?: "horizontal" | "vertical"
+  onSplitDirection?: () => void
 }
 
 /** Map tab IDs to their corresponding feature setting key */
@@ -59,7 +65,15 @@ const TAB_FEATURE_MAP: Record<string, string> = {
   graph: "features.graph",
 }
 
-export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
+export function LeftDock({
+  activeTab,
+  setActiveTab,
+  splitActive = false,
+  onSplitOpen,
+  onSplitClose,
+  splitDirection = "horizontal",
+  onSplitDirection,
+}: LeftDockProps) {
   const [expanded, setExpanded] = useState(false)
   const { panels } = usePlugins()
   const [enabledFeatures, setEnabledFeatures] = useState<Record<string, boolean>>({})
@@ -189,6 +203,65 @@ export function LeftDock({ activeTab, setActiveTab }: LeftDockProps) {
 
         {/* Bottom utility area */}
         <div className="flex flex-col gap-2 mb-2 px-2">
+          {/* Split pane button */}
+          {expanded ? (
+            <div className="flex items-center gap-1 w-full">
+              <button
+                onClick={splitActive ? onSplitClose : onSplitOpen}
+                className={`skeuo-btn flex-1 flex items-center gap-3 px-3.5 h-10 rounded-xl ${splitActive ? "active" : ""}`}
+                aria-label={splitActive ? "Close split view" : "Open split view"}
+              >
+                <AnimatedIcon animation="morph" size={18}>
+                  <FiColumns size={18} className="flex-shrink-0" />
+                </AnimatedIcon>
+                <span
+                  className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                  style={{ color: splitActive ? "var(--accent-primary)" : "var(--text-secondary)" }}
+                >
+                  {splitActive ? "Split: On" : "Split View"}
+                </span>
+              </button>
+              {splitActive && onSplitDirection && (
+                <button
+                  onClick={onSplitDirection}
+                  className="skeuo-btn w-9 h-9 flex items-center justify-center rounded-xl flex-shrink-0"
+                  title={splitDirection === "horizontal" ? "Switch to vertical split" : "Switch to horizontal split"}
+                  aria-label="Toggle split direction"
+                >
+                  {splitDirection === "horizontal"
+                    ? <FiArrowDown size={14} style={{ color: "var(--text-tertiary)" }} />
+                    : <FiArrowRight size={14} style={{ color: "var(--text-tertiary)" }} />}
+                </button>
+              )}
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={splitActive ? onSplitClose : onSplitOpen}
+                  className={`skeuo-btn w-10 h-10 flex items-center justify-center rounded-full mx-auto ${splitActive ? "active" : ""}`}
+                  aria-label={splitActive ? "Close split view" : "Open split view"}
+                >
+                  <AnimatedIcon animation="morph" size={18}>
+                    <FiColumns size={18} />
+                  </AnimatedIcon>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                sideOffset={12}
+                className="font-medium text-xs px-3 py-1.5 rounded-lg"
+                style={{
+                  backgroundColor: "var(--tooltip-bg, #1c1a17)",
+                  color: "var(--tooltip-text, #f5f0e8)",
+                  border: "1px solid var(--tooltip-border, rgba(255,255,255,0.07))",
+                }}
+              >
+                {splitActive ? "Close Split" : "Split View"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Divider */}
           <div
             className={`h-px rounded-full ${expanded ? "mx-3" : "mx-2"}`}
