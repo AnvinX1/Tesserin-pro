@@ -182,7 +182,12 @@ export function registerIpcHandlers(): void {
 
     // ── Settings ──────────────────────────────────────────────────────
     ipcMain.handle('db:settings:get', (_e, key) => db.getSetting(requireString(key, 'key')))
-    ipcMain.handle('db:settings:set', (_e, key, value) => db.setSetting(requireString(key, 'key'), requireString(value, 'value')))
+    ipcMain.handle('db:settings:set', (_e, key, value) => {
+        // key must be non-empty; value may be an empty string (e.g. clearing an API key)
+        const k = requireString(key, 'key')
+        if (typeof value !== 'string') throw new Error(`Invalid parameter "value": expected string`)
+        return db.setSetting(k, value)
+    })
     ipcMain.handle('db:settings:getAll', () => db.getAllSettings())
     ipcMain.handle('db:clear', () => db.clearAllData())
 

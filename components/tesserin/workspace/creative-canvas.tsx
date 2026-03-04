@@ -369,12 +369,16 @@ export function CreativeCanvas({ onSplitOpen, paneId = "primary" }: { onSplitOpe
         })
       }
     }
+    // onCanvasUpdated wraps our callback in an IPC-event handler and returns
+    // the wrapped reference — we must capture it so offCanvasUpdated can
+    // remove the correct listener (passing the original callback won't work).
+    let registeredHandler: ((...args: any[]) => void) | undefined
     if (typeof window !== "undefined" && window.tesserin?.onCanvasUpdated) {
-      window.tesserin.onCanvasUpdated(handler)
+      registeredHandler = window.tesserin.onCanvasUpdated(handler)
     }
     return () => {
-      if (typeof window !== "undefined" && window.tesserin?.offCanvasUpdated) {
-        window.tesserin.offCanvasUpdated(handler)
+      if (registeredHandler && typeof window !== "undefined" && window.tesserin?.offCanvasUpdated) {
+        window.tesserin.offCanvasUpdated(registeredHandler)
       }
     }
   }, [])
