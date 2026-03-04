@@ -91,7 +91,15 @@ jobs:
         run: rm -rf release/
 
       - name: Package Electron app
-        run: pnpm electron-builder --${{ matrix.platform }} --publish never
+        # macOS: build arm64 only per-arch to avoid concurrent hardlink EEXIST
+        # (dmg + zip targets share the same appOutDir and race on icon.icns)
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "mac" ]; then
+            pnpm electron-builder --mac --arm64 --publish never
+          else
+            pnpm electron-builder --${{ matrix.platform }} --publish never
+          fi
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}

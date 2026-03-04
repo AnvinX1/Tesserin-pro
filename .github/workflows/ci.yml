@@ -94,6 +94,14 @@ jobs:
         run: pnpm tsc -p electron/tsconfig.json
 
       - name: Package Electron app (dry-run)
-        run: pnpm electron-builder --publish never --${{ matrix.platform }}
+        # macOS: build arm64 only to avoid concurrent hardlink EEXIST
+        # (dmg + zip targets share the same appOutDir and race on icon.icns)
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "mac" ]; then
+            pnpm electron-builder --publish never --mac --arm64
+          else
+            pnpm electron-builder --publish never --${{ matrix.platform }}
+          fi
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
