@@ -88,6 +88,7 @@ jobs:
         run: pnpm tsc -p electron/tsconfig.json
 
       - name: Clean output directory
+        shell: bash
         run: rm -rf release/
 
       - name: Package Electron app
