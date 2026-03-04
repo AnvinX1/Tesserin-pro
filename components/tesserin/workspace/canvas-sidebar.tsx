@@ -2,6 +2,13 @@ import React, { useState, useCallback } from "react"
 import { AnimatedIcon } from "../core/animated-icon"
 import { ScribbledPlus, ScribbledSearch, ScribbledTrash, ScribbledEdit, ScribbledCopy, ScribbledLayers } from "../core/scribbled-icons"
 import type { CanvasInfo } from "@/lib/canvas-store"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu"
 
 interface CanvasSidebarProps {
   canvases: CanvasInfo[]
@@ -41,11 +48,6 @@ export function CanvasSidebar({
   const [search, setSearch] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [contextMenu, setContextMenu] = useState<{
-    id: string
-    x: number
-    y: number
-  } | null>(null)
 
   const filtered = search.trim()
     ? canvases.filter((c) =>
@@ -53,27 +55,12 @@ export function CanvasSidebar({
       )
     : canvases
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent, id: string) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const rect = (e.target as HTMLElement).closest(".canvas-sidebar-wrapper")?.getBoundingClientRect()
-      setContextMenu({
-        id,
-        x: e.clientX - (rect?.left ?? 0),
-        y: e.clientY - (rect?.top ?? 0),
-      })
-    },
-    [],
-  )
-
   const startRename = useCallback(
     (id: string) => {
       const c = canvases.find((c) => c.id === id)
       if (c) {
         setEditValue(c.name)
         setEditingId(id)
-        setContextMenu(null)
       }
     },
     [canvases],
@@ -89,7 +76,6 @@ export function CanvasSidebar({
   return (
     <div
       className="canvas-sidebar-wrapper skeuo-panel w-56 flex-shrink-0 flex flex-col h-full overflow-hidden relative"
-      onClick={() => setContextMenu(null)}
     >
       {/* Header */}
       <div
@@ -186,134 +172,94 @@ export function CanvasSidebar({
         {filtered.map((canvas) => {
           const isActive = canvas.id === activeCanvasId
           return (
-            <button
-              key={canvas.id}
-              onClick={() => onSelect(canvas.id)}
-              onContextMenu={(e) => handleContextMenu(e, canvas.id)}
-              onDoubleClick={() => startRename(canvas.id)}
-              className="w-full text-left px-3 py-2.5 mb-1 transition-all"
-              style={{
-                background: isActive ? "var(--bg-panel-inset)" : "transparent",
-                color: "var(--text-primary)",
-                borderRadius: "var(--radius-inset)",
-                boxShadow: isActive ? "var(--input-inner-shadow)" : "none",
-                border: isActive ? "1px solid var(--border-light)" : "1px solid transparent",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "var(--bg-panel-inset)"
-                  e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "transparent"
-                  e.currentTarget.style.boxShadow = "none"
-                }
-              }}
-            >
-              {editingId === canvas.id ? (
-                <input
-                  autoFocus
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={commitRename}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commitRename()
-                    if (e.key === "Escape") setEditingId(null)
+            <ContextMenu key={canvas.id}>
+              <ContextMenuTrigger asChild>
+                <button
+                  onClick={() => onSelect(canvas.id)}
+                  onDoubleClick={() => startRename(canvas.id)}
+                  className="w-full text-left px-3 py-2.5 mb-1 transition-all"
+                  style={{
+                    background: isActive ? "var(--bg-panel-inset)" : "transparent",
+                    color: "var(--text-primary)",
+                    borderRadius: "var(--radius-inset)",
+                    boxShadow: isActive ? "var(--input-inner-shadow)" : "none",
+                    border: isActive ? "1px solid var(--border-light)" : "1px solid transparent",
                   }}
-                  className="bg-transparent border-none text-xs font-semibold focus:outline-none w-full"
-                  style={{ color: "var(--text-primary)" }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  {/* Active indicator dot */}
-                  <div
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: isActive ? "var(--accent-primary)" : "var(--text-tertiary)",
-                      boxShadow: isActive ? "0 0 6px var(--accent-primary)" : "none",
-                      flexShrink: 0,
-                      opacity: isActive ? 1 : 0.4,
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">
-                      {canvas.name}
-                    </p>
-                    <p
-                      className="text-[10px] mt-0.5"
-                      style={{ color: "var(--text-tertiary)" }}
-                    >
-                      {timeAgo(canvas.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </button>
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "var(--bg-panel-inset)"
+                      e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "transparent"
+                      e.currentTarget.style.boxShadow = "none"
+                    }
+                  }}
+                >
+                  {editingId === canvas.id ? (
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename()
+                        if (e.key === "Escape") setEditingId(null)
+                      }}
+                      className="bg-transparent border-none text-xs font-semibold focus:outline-none w-full"
+                      style={{ color: "var(--text-primary)" }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {/* Active indicator dot */}
+                      <div
+                        style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: "50%",
+                          background: isActive ? "var(--accent-primary)" : "var(--text-tertiary)",
+                          boxShadow: isActive ? "0 0 6px var(--accent-primary)" : "none",
+                          flexShrink: 0,
+                          opacity: isActive ? 1 : 0.4,
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">
+                          {canvas.name}
+                        </p>
+                        <p
+                          className="text-[10px] mt-0.5"
+                          style={{ color: "var(--text-tertiary)" }}
+                        >
+                          {timeAgo(canvas.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem onClick={() => startRename(canvas.id)} className="gap-2">
+                  <ScribbledEdit size={12} /> Rename
+                </ContextMenuItem>
+                <ContextMenuItem onClick={() => onDuplicate(canvas.id)} className="gap-2">
+                  <ScribbledCopy size={12} /> Duplicate
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem 
+                  onClick={() => onDelete(canvas.id)} 
+                  className="gap-2 text-destructive focus:text-destructive"
+                >
+                  <ScribbledTrash size={12} /> Delete
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           )
         })}
       </div>
-
-      {/* Context Menu — neumorphic popover */}
-      {contextMenu && (
-        <div
-          className="skeuo-panel absolute z-[200] py-1.5 min-w-[140px]"
-          style={{
-            left: contextMenu.x,
-            top: contextMenu.y,
-            borderRadius: "var(--radius-inset)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {[
-            { icon: <ScribbledEdit size={12} />, label: "Rename", action: () => startRename(contextMenu.id) },
-            { icon: <ScribbledCopy size={12} />, label: "Duplicate", action: () => { onDuplicate(contextMenu.id); setContextMenu(null) } },
-          ].map((item) => (
-            <button
-              key={item.label}
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium transition-all"
-              style={{ color: "var(--text-primary)", borderRadius: 8 }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--bg-panel-inset)"
-                e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent"
-                e.currentTarget.style.boxShadow = "none"
-              }}
-              onClick={item.action}
-            >
-              {item.icon} {item.label}
-            </button>
-          ))}
-          <div
-            className="mx-2.5 my-1"
-            style={{ borderTop: "1px solid var(--border-light)", opacity: 0.5 }}
-          />
-          <button
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium transition-all"
-            style={{ color: "#ef4444", borderRadius: 8 }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--bg-panel-inset)"
-              e.currentTarget.style.boxShadow = "var(--input-inner-shadow)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent"
-              e.currentTarget.style.boxShadow = "none"
-            }}
-            onClick={() => {
-              onDelete(contextMenu.id)
-              setContextMenu(null)
-            }}
-          >
-            <ScribbledTrash size={12} /> Delete
-          </button>
-        </div>
-      )}
     </div>
   )
 }
