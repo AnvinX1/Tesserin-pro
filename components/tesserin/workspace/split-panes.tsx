@@ -241,7 +241,7 @@ export function SplitPaneLayout({
       if (!splitState.isActive || !e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return
       const isHoriz = splitState.direction === 'horizontal'
       const shrinkKey = isHoriz ? 'ArrowLeft' : 'ArrowUp'
-      const growKey  = isHoriz ? 'ArrowRight' : 'ArrowDown'
+      const growKey = isHoriz ? 'ArrowRight' : 'ArrowDown'
       if (e.key === shrinkKey) {
         e.preventDefault()
         setSplitRatio((r) => Math.max(0.2, parseFloat((r - 0.05).toFixed(2))))
@@ -316,7 +316,7 @@ export function SplitPaneLayout({
         {splitEnabled && primaryViewType !== "canvas" && (
           <button
             onClick={() => onSplitOpen(primaryViewType)}
-            className="absolute top-2 right-2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+            className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
             style={{
               backgroundColor: "var(--bg-panel-inset)",
               color: "var(--text-secondary)",
@@ -385,9 +385,8 @@ export function SplitPaneLayout({
 
       {/* Divider */}
       <div
-        className={`relative flex-shrink-0 group ${
-          isHorizontal ? "w-[3px] cursor-col-resize" : "h-[3px] cursor-row-resize"
-        }`}
+        className={`relative flex-shrink-0 group ${isHorizontal ? "w-[3px] cursor-col-resize" : "h-[3px] cursor-row-resize"
+          }`}
         onMouseDown={handleMouseDown}
         style={{
           backgroundColor: isDragging ? "var(--accent-primary)" : "var(--border-dark)",
@@ -396,19 +395,17 @@ export function SplitPaneLayout({
       >
         {/* Larger hit target */}
         <div
-          className={`absolute ${
-            isHorizontal
-              ? "inset-y-0 -left-1.5 -right-1.5"
-              : "inset-x-0 -top-1.5 -bottom-1.5"
-          }`}
+          className={`absolute ${isHorizontal
+            ? "inset-y-0 -left-1.5 -right-1.5"
+            : "inset-x-0 -top-1.5 -bottom-1.5"
+            }`}
         />
         {/* Drag handle dots */}
         <div
-          className={`absolute ${
-            isHorizontal
-              ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5"
-              : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-row gap-0.5"
-          } opacity-0 group-hover:opacity-100 transition-opacity`}
+          className={`absolute ${isHorizontal
+            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5"
+            : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-row gap-0.5"
+            } opacity-0 group-hover:opacity-100 transition-opacity`}
         >
           {[0, 1, 2].map((i) => (
             <div

@@ -145,7 +145,7 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
       <div className="flex flex-col h-full">
         {/* Header */}
         <div
-          className="h-12 border-b flex items-center px-6 justify-between shrink-0"
+          className="h-12 border-b flex items-center pl-20 pr-6 justify-between shrink-0"
           style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
         >
           <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div
-        className="h-12 border-b flex items-center px-4 gap-2 shrink-0"
+        className="h-12 border-b flex items-center pl-20 pr-4 gap-2 shrink-0"
         style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
       >
         {/* Note switcher */}
@@ -282,9 +282,8 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => setViewMode("edit")}
-            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
-              viewMode === "edit" ? "active" : ""
-            }`}
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${viewMode === "edit" ? "active" : ""
+              }`}
             aria-label="Edit mode"
             aria-pressed={viewMode === "edit"}
           >
@@ -292,9 +291,8 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
           </button>
           <button
             onClick={() => setViewMode("split")}
-            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
-              viewMode === "split" ? "active" : ""
-            }`}
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${viewMode === "split" ? "active" : ""
+              }`}
             aria-label="Split mode"
             aria-pressed={viewMode === "split"}
           >
@@ -305,9 +303,8 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
           </button>
           <button
             onClick={() => setViewMode("preview")}
-            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${
-              viewMode === "preview" ? "active" : ""
-            }`}
+            className={`skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg ${viewMode === "preview" ? "active" : ""
+              }`}
             aria-label="Preview mode"
             aria-pressed={viewMode === "preview"}
           >

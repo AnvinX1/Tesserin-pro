@@ -183,10 +183,10 @@ function NotePickerPanel({
   const [search, setSearch] = useState("")
   const filtered = search.trim()
     ? notes.filter(
-        (n) =>
-          n.title.toLowerCase().includes(search.toLowerCase()) ||
-          n.tags.some((t) => t.name.toLowerCase().includes(search.toLowerCase())),
-      )
+      (n) =>
+        n.title.toLowerCase().includes(search.toLowerCase()) ||
+        n.tags.some((t) => t.name.toLowerCase().includes(search.toLowerCase())),
+    )
     : notes
 
   return (
@@ -350,7 +350,7 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
               elements,
               ...(files ? { files } : {}),
             })
-          } catch {}
+          } catch { }
         })
       }
     }
@@ -1076,100 +1076,100 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
       <div
         className="flex-1 relative min-h-0"
       >
-      {/* Excalidraw is always mounted — canvas switches use updateScene() so it never
+        {/* Excalidraw is always mounted — canvas switches use updateScene() so it never
           remounts. This eliminates the blank-flash / stuck behaviour between tabs. */}
-      <Excalidraw
-        key="tesserin-excalidraw"
-        excalidrawAPI={onAPI}
-        initialData={{
-          elements: [],
-          appState: { theme: isDark ? "dark" : "light" },
-          ...(libraryInitData ? { libraryItems: libraryInitData } : {})
-        }}
-        onChange={onChange}
-        onLibraryChange={onLibraryChange}
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: true,
-            clearCanvas: true,
-            export: { saveFileToDisk: true },
-            loadScene: true,
-            saveToActiveFile: false,
-            toggleTheme: true,
-          },
-        }}
-      >
-        {/* No custom <MainMenu> — Excalidraw renders its full native menu
+        <Excalidraw
+          key="tesserin-excalidraw"
+          excalidrawAPI={onAPI}
+          initialData={{
+            elements: [],
+            appState: { theme: isDark ? "dark" : "light" },
+            ...(libraryInitData ? { libraryItems: libraryInitData } : {})
+          }}
+          onChange={onChange}
+          onLibraryChange={onLibraryChange}
+          UIOptions={{
+            canvasActions: {
+              changeViewBackgroundColor: true,
+              clearCanvas: true,
+              export: { saveFileToDisk: true },
+              loadScene: true,
+              saveToActiveFile: false,
+              toggleTheme: true,
+            },
+          }}
+        >
+          {/* No custom <MainMenu> — Excalidraw renders its full native menu
             with all defaults: Export (PNG/SVG/Clipboard with Background,
             Dark mode, Embed scene, Scale), Load Scene, Clear Canvas,
             Toggle Theme, Change Background, Help, etc. */}
-        <WelcomeScreen>
-          <WelcomeScreen.Hints.MenuHint />
-          <WelcomeScreen.Hints.ToolbarHint />
-          <WelcomeScreen.Center>
-            <div className="flex flex-col items-center justify-center pointer-events-none select-none">
-              <TesseradrawLogo size={72} animated />
-              <h1
-                className="mt-4"
-                style={{
-                  color: "var(--text-primary)",
-                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
-                  fontSize: "2.5rem",
-                  fontWeight: 400,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                Tesseradraw
-              </h1>
-              <p
-                className="mt-1"
-                style={{
-                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
-                  fontSize: "0.95rem",
-                  opacity: 0.45,
-                  fontWeight: 400,
-                }}
-              >
-                AI-Enhanced Creative Canvas
-              </p>
-            </div>
-          </WelcomeScreen.Center>
-        </WelcomeScreen>
-      </Excalidraw>
+          <WelcomeScreen>
+            <WelcomeScreen.Hints.MenuHint />
+            <WelcomeScreen.Hints.ToolbarHint />
+            <WelcomeScreen.Center>
+              <div className="flex flex-col items-center justify-center pointer-events-none select-none">
+                <TesseradrawLogo size={72} animated />
+                <h1
+                  className="mt-4"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                    fontSize: "2.5rem",
+                    fontWeight: 400,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Tesseradraw
+                </h1>
+                <p
+                  className="mt-1"
+                  style={{
+                    fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                    fontSize: "0.95rem",
+                    opacity: 0.45,
+                    fontWeight: 400,
+                  }}
+                >
+                  AI-Enhanced Creative Canvas
+                </p>
+              </div>
+            </WelcomeScreen.Center>
+          </WelcomeScreen>
+        </Excalidraw>
 
-      {showNotePicker && (
-        <NotePickerPanel
-          notes={notes}
-          onInsert={handleInsertNote}
-          onClose={() => setShowNotePicker(false)}
-        />
-      )}
-      {/* Canvas-switch overlay — covers Excalidraw from first mount until scene data is applied */}
-      {isTransitioning && (
-        <div
-          className="absolute inset-0 z-30"
-          style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
-        />
-      )}
+        {showNotePicker && (
+          <NotePickerPanel
+            notes={notes}
+            onInsert={handleInsertNote}
+            onClose={() => setShowNotePicker(false)}
+          />
+        )}
+        {/* Canvas-switch overlay — covers Excalidraw from first mount until scene data is applied */}
+        {isTransitioning && (
+          <div
+            className="absolute inset-0 z-30"
+            style={{ backgroundColor: isDark ? DARK_BG : LIGHT_BG }}
+          />
+        )}
 
-      {/* Full-board toggle button — bottom-right corner */}
-      {activeCanvasId && (
-        <button
-          onClick={toggleFullscreen}
-          className="skeuo-btn absolute bottom-3 right-3 z-40 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all"
-          style={{
-            color: isFullscreen ? "var(--text-on-accent)" : "var(--accent-primary)",
-            backgroundColor: isFullscreen ? "var(--accent-primary)" : undefined,
-            borderRadius: "var(--radius-btn)",
-          }}
-          title={isFullscreen ? "Exit full board (Esc)" : "Full board mode"}
-        >
-          {isFullscreen
-            ? <><ScribbledCollapse size={13} /> Exit Full Board</>
-            : <><ScribbledExpand size={13} /> Full Board</>
-          }
-        </button>
-      )}
+        {/* Full-board toggle button — bottom-right corner */}
+        {activeCanvasId && (
+          <button
+            onClick={toggleFullscreen}
+            className="skeuo-btn absolute bottom-3 right-3 z-40 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all"
+            style={{
+              color: isFullscreen ? "var(--text-on-accent)" : "var(--accent-primary)",
+              backgroundColor: isFullscreen ? "var(--accent-primary)" : undefined,
+              borderRadius: "var(--radius-btn)",
+            }}
+            title={isFullscreen ? "Exit full board (Esc)" : "Full board mode"}
+          >
+            {isFullscreen
+              ? <><ScribbledCollapse size={13} /> Exit Full Board</>
+              : <><ScribbledExpand size={13} /> Full Board</>
+            }
+          </button>
+        )}
 
       </div>
     </div>

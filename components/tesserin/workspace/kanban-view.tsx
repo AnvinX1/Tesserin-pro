@@ -152,7 +152,7 @@ export function KanbanView() {
         <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Header */}
             <div
-                className="px-6 py-4 border-b flex items-center justify-between"
+                className="px-6 py-4 border-b flex items-center pl-[72px] justify-between"
                 style={{ borderColor: "var(--border-dark)" }}
             >
                 <div>
