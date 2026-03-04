@@ -55,8 +55,18 @@
         }
       ],
       "icon": "build/icon.icns",
-      "hardenedRuntime": true,
+      "identity": null,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false
+    },
+    "dmg": {
+      "sign": false,
+      "contents": [
+        { "x": 130, "y": 220, "type": "file" },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ],
+      "background": null,
+      "window": { "width": 540, "height": 380 }
     },
     "win": {
       "target": [
