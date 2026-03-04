@@ -55,13 +55,13 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
-          'bg-background/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-4 data-[state=open]:slide-in-from-top-4 fixed top-[10vh] left-[50%] z-50 grid w-full max-w-sm translate-x-[-50%] gap-0 overflow-hidden rounded-2xl border shadow-2xl duration-200',
+          'bg-background/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-4 data-[state=open]:slide-in-from-top-4 fixed top-[10vh] left-[50%] z-50 grid w-full max-w-sm translate-x-[-50%] gap-0 overflow-hidden rounded-2xl shadow-2xl duration-200',
           className,
         )}
 
         style={{
           backgroundColor: "var(--bg-panel)",
-          borderColor: "var(--border-mid)",
+          border: "1px solid var(--border-mid)",
           boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
         }}
         {...props}

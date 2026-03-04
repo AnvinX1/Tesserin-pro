@@ -222,7 +222,7 @@ function createGoldenDefs(
   textMerge.append("feMergeNode").attr("in", "shadow")
   textMerge.append("feMergeNode").attr("in", "SourceGraphic")
 
-  /* Warm ambient radial gradient (centred golden haze) */
+  /* Warm ambient radial gradient (obsidian vignetting) */
   const radialGrad = defs
     .append("radialGradient")
     .attr("id", "graph-ambience")
@@ -232,18 +232,18 @@ function createGoldenDefs(
   radialGrad
     .append("stop")
     .attr("offset", "0%")
-    .attr("stop-color", "#FACC15")
-    .attr("stop-opacity", "0.04")
+    .attr("stop-color", "#050505")
+    .attr("stop-opacity", "0")
   radialGrad
     .append("stop")
     .attr("offset", "70%")
-    .attr("stop-color", "#FACC15")
-    .attr("stop-opacity", "0.01")
+    .attr("stop-color", "#050505")
+    .attr("stop-opacity", "0.05")
   radialGrad
     .append("stop")
     .attr("offset", "100%")
-    .attr("stop-color", "#FACC15")
-    .attr("stop-opacity", "0")
+    .attr("stop-color", "#050505")
+    .attr("stop-opacity", "0.15")
 }
 
 /* ------------------------------------------------------------------ */
@@ -381,7 +381,7 @@ export function D3GraphView() {
         .attr("y1", (d) => d.sy)
         .attr("x2", (d) => d.tx)
         .attr("y2", (d) => d.ty)
-        .attr("stroke", "#FACC15")
+        .attr("stroke", "var(--accent-primary)")
         .attr("stroke-width", 1)
         .attr("stroke-opacity", 0)
         .transition()
@@ -437,8 +437,8 @@ export function D3GraphView() {
         )
         .attr("stroke", (d) =>
           d.id === selectedNoteId
-            ? "#FACC15"
-            : "rgba(250, 204, 21, 0.3)",
+            ? "var(--accent-primary)"
+            : "var(--border-mid)",
         )
         .attr("stroke-width", (d) => (d.id === selectedNoteId ? 2.5 : 1))
         .attr("filter", (d) =>
@@ -474,7 +474,7 @@ export function D3GraphView() {
         group
           .select("circle")
           .attr("filter", "url(#gold-glow-active)")
-          .attr("stroke", "#FACC15")
+          .attr("stroke", "var(--accent-primary)")
           .attr("stroke-width", 2.5)
         group
           .select("text")
@@ -563,7 +563,7 @@ export function D3GraphView() {
         .enter()
         .append("line")
         .attr("class", "graph-link")
-        .attr("stroke", "#FACC15")
+        .attr("stroke", "var(--accent-primary)")
         .attr("stroke-width", 1)
         .attr("stroke-opacity", 0.15)
 
@@ -590,8 +590,8 @@ export function D3GraphView() {
         )
         .attr("stroke", (d) =>
           d.id === selectedNoteId
-            ? "#FACC15"
-            : "rgba(250, 204, 21, 0.3)",
+            ? "var(--accent-primary)"
+            : "var(--border-mid)",
         )
         .attr("stroke-width", (d) => (d.id === selectedNoteId ? 2.5 : 1))
         .attr("filter", (d) =>
@@ -626,7 +626,7 @@ export function D3GraphView() {
         group
           .select("circle")
           .attr("filter", "url(#gold-glow-active)")
-          .attr("stroke", "#FACC15")
+          .attr("stroke", "var(--accent-primary)")
           .attr("stroke-width", 2.5)
         group
           .select("text")
@@ -726,7 +726,7 @@ export function D3GraphView() {
           return `M${sx},${sy} C${(sx + tx) / 2},${sy} ${(sx + tx) / 2},${ty} ${tx},${ty}`
         })
         .attr("fill", "none")
-        .attr("stroke", "#FACC15")
+        .attr("stroke", "var(--accent-primary)")
         .attr("stroke-width", 1.2)
         .attr("stroke-opacity", 0)
         .transition()
@@ -776,7 +776,7 @@ export function D3GraphView() {
         .attr("class", "graph-link")
         .attr("d", radialLink as any)
         .attr("fill", "none")
-        .attr("stroke", "#FACC15")
+        .attr("stroke", "var(--accent-primary)")
         .attr("stroke-width", 1.2)
         .attr("stroke-opacity", 0)
         .transition()

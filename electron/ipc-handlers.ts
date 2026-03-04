@@ -184,6 +184,7 @@ export function registerIpcHandlers(): void {
     ipcMain.handle('db:settings:get', (_e, key) => db.getSetting(requireString(key, 'key')))
     ipcMain.handle('db:settings:set', (_e, key, value) => db.setSetting(requireString(key, 'key'), requireString(value, 'value')))
     ipcMain.handle('db:settings:getAll', () => db.getAllSettings())
+    ipcMain.handle('db:clear', () => db.clearAllData())
 
     // ── Canvases ──────────────────────────────────────────────────────
     ipcMain.handle('db:canvases:list', () => db.listCanvases())

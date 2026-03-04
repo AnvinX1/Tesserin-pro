@@ -95,7 +95,35 @@ class ErrorBoundary extends Component<EBProps, EBState> {
  */
 
 function AppContent() {
-    const [activeTab, setActiveTab] = useState<TabId>("graph")
+    const [activeTab, setActiveTab] = useState<TabId>(() => {
+        // Initial sync from localStorage (fastest)
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("tesserin:active-tab")
+            if (saved === "notes" || saved === "canvas" || saved === "graph" || saved === "settings") {
+                return saved as TabId
+            }
+        }
+        return "notes"
+    })
+
+    // Save active tab to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem("tesserin:active-tab", activeTab)
+    }, [activeTab])
+
+    // Respect the "Startup tab" setting from database on mount
+    useEffect(() => {
+        async function loadStartupTab() {
+            const startup = await getSetting("general.startupTab")
+            if (startup && startup !== "last-active") {
+                if (startup === "notes" || startup === "canvas" || startup === "graph" || startup === "settings") {
+                    setActiveTab(startup as TabId)
+                }
+            }
+        }
+        loadStartupTab()
+    }, [])
+
     const [showNotes, setShowNotes] = useState(true)
     const [showSearch, setShowSearch] = useState(false)
     const [showExport, setShowExport] = useState(false)

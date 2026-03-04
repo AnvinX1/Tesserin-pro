@@ -365,6 +365,17 @@ export async function setSetting(key: string, value: string): Promise<void> {
     lsSet(SETTINGS_LS_KEY, settings)
 }
 
+/**
+ * Clear ALL data from both database (Electron) and localStorage.
+ */
+export async function clearAllData(): Promise<void> {
+    if (isElectron()) {
+        await window.tesserin!.db.clear()
+    }
+    // Always clear localStorage for completeness
+    localStorage.clear()
+}
+
 /* ================================================================== */
 /*  CANVASES                                                           */
 /* ================================================================== */

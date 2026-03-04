@@ -42,6 +42,7 @@ import {
   HiOutlineCpuChip,
   HiOutlineSparkles,
 } from "react-icons/hi2"
+import * as storage from "@/lib/storage-client"
 import { getSetting, setSetting } from "@/lib/storage-client"
 import { useNotes } from "@/lib/notes-store"
 import { useMcp, type McpServerConfig } from "@/lib/mcp-client"
@@ -584,15 +585,18 @@ export function SettingsPanel() {
       
       setInitialSettings({ ...settings })
       setSaved(true)
+      setDirty(false)
       
       // Dispatch a global event so other parts of the app can react to setting changes
       window.dispatchEvent(new CustomEvent('tesserin:settings-updated', { detail: settings }))
 
-      setTimeout(() => setSaved(false), 2000)
+      setTimeout(() => setSaved(false), 1000)
     } catch (err) {
       console.error("Failed to save settings:", err)
     } finally {
       setSaving(false)
+      // Reload the app immediately to apply all changes
+      window.location.reload()
     }
   }, [settings])
 
@@ -662,9 +666,13 @@ export function SettingsPanel() {
       title: "Clear All Data",
       description: "⚠️ This will permanently delete ALL notes, tasks, canvases, and settings. This cannot be undone.\n\nAre you sure?",
       destructive: true,
-      onConfirm: () => {
-        localStorage.clear()
-        window.location.reload()
+      onConfirm: async () => {
+        try {
+          await storage.clearAllData()
+          window.location.href = "/"
+        } catch (err) {
+          console.error("Failed to clear data:", err)
+        }
       }
     })
   }, [])
@@ -699,6 +707,7 @@ export function SettingsPanel() {
           value={settings["general.startupTab"]}
           onChange={(v) => update("general.startupTab", v)}
           options={[
+            { value: "last-active", label: "Last Active" },
             { value: "notes", label: "Notes" },
             { value: "canvas", label: "Canvas" },
             { value: "graph", label: "Graph" },
@@ -2783,7 +2792,7 @@ curl http://127.0.0.1:${apiServerStatus.port}/api/knowledge/graph \\
             ) : saved ? (
               <><FiCheck size={12} /> Saved</>
             ) : (
-              <><FiSave size={12} /> Save Settings</>
+              <><FiSave size={12} /> {dirty ? "Save & Reload" : "Save Settings"}</>
             )}
           </button>
         </div>
@@ -2809,9 +2818,12 @@ curl http://127.0.0.1:${apiServerStatus.port}/api/knowledge/graph \\
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                confirmModal.onConfirm()
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                const cb = confirmModal.onConfirm
                 setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                cb()
               }}
               className={confirmModal.destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >

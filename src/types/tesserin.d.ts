@@ -67,6 +67,7 @@ interface TesserinDB {
     templates: TesserinDBTemplates
     settings: TesserinDBSettings
     canvases: TesserinDBCanvases
+    clear(): Promise<void>
 }
 
 interface TesserinAI {

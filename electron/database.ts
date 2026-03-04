@@ -146,7 +146,7 @@ export function initDatabase(): void {
 /**
  * Seed the database with starter content.
  */
-function seedDatabase(): void {
+export function seedDatabase(): void {
     const insertTemplate = db.prepare(
         'INSERT INTO templates (id, name, content, category) VALUES (?, ?, ?, ?)'
     )
@@ -172,6 +172,23 @@ function seedDatabase(): void {
     })
 
     seedTx()
+}
+
+/**
+ * Clear ALL data from the database and re-seed defaults.
+ */
+export function clearAllData(): void {
+    const tables = [
+        'folders', 'notes', 'tags', 'note_tags', 'tasks',
+        'templates', 'settings', 'canvases', 'api_keys'
+    ]
+    const resetTx = db.transaction(() => {
+        for (const table of tables) {
+            db.prepare(`DELETE FROM ${table}`).run()
+        }
+    })
+    resetTx()
+    seedDatabase()
 }
 
 // ── Note Operations ───────────────────────────────────────────────────
