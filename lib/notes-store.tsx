@@ -110,7 +110,7 @@ interface NotesContextValue {
   folders: NoteFolder[]
   selectedNoteId: string | null
   selectNote: (id: string | null) => void
-  addNote: (title?: string, folderId?: string) => string
+  addNote: (title?: string, content?: string, folderId?: string) => string
   updateNote: (id: string, updates: Partial<Pick<Note, "title" | "content">>) => void
   deleteNote: (id: string) => void
   getNoteByTitle: (title: string) => Note | undefined
@@ -229,15 +229,15 @@ export function NotesProvider({ children }: NotesProviderProps) {
     setSelectedNoteId(id)
   }, [])
 
-  const addNote = useCallback((title?: string, folderId?: string): string => {
+  const addNote = useCallback((title?: string, content?: string, folderId?: string): string => {
     const id = uid()
     const timestamp = new Date().toISOString()
     const noteTitle = title || "Untitled Note"
-    const content = `# ${noteTitle}\n\n`
+    const noteContent = content || `# ${noteTitle}\n\n`
     const newNote: Note = {
       id,
       title: noteTitle,
-      content,
+      content: noteContent,
       createdAt: timestamp,
       updatedAt: timestamp,
       tags: [],
@@ -247,7 +247,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
     setSelectedNoteId(id)
 
     // Persist to SQLite — let the DB create the row, then update local ID if needed
-    storage.createNote({ title: noteTitle, content, folderId: folderId || undefined }).then((dbNote) => {
+    storage.createNote({ title: noteTitle, content: noteContent, folderId: folderId || undefined }).then((dbNote) => {
       if (dbNote?.id && dbNote.id !== id) {
         // Replace the temp ID with the real DB-assigned ID
         setNotes((prev) =>

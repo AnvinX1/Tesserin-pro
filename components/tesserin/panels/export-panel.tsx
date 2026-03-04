@@ -4,8 +4,10 @@ import React, { useState, useCallback } from "react"
 import {
   FiFileText, FiCode, FiFile, FiCopy, FiCheck,
   FiPrinter, FiBook, FiGlobe, FiPackage, FiChevronDown, FiX,
+  FiUpload, FiFilePlus,
 } from "react-icons/fi"
 import { useNotes, type Note } from "@/lib/notes-store"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 /**
  * ExportPanel v2
@@ -213,10 +215,12 @@ function safeName(title: string): string {
 /* ── Component ── */
 
 export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
-  const { notes } = useNotes()
+  const { notes, addNote } = useNotes()
   const [exported, setExported] = useState<string | null>(null)
+  const [imported, setImported] = useState<number | null>(null)
   const [batchFormat, setBatchFormat] = useState<ExportFormat>("markdown")
   const [showBatchMenu, setShowBatchMenu] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const exportNote = useCallback(
     (format: ExportFormat) => {
@@ -311,6 +315,82 @@ export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
     setTimeout(() => setExported(null), 2000)
   }, [notes, batchFormat])
 
+  const handleImportMarkdown = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    let count = 0
+    for (const file of Array.from(files)) {
+      try {
+        const text = await file.text()
+        const title = file.name.replace(/\.md$/i, "")
+        addNote(title, text)
+        count++
+      } catch (err) {
+        console.error("Failed to import", file.name, err)
+      }
+    }
+    setImported(count)
+    setTimeout(() => setImported(null), 3000)
+    if (e.target) e.target.value = ""
+  }
+
+  const handleImportVault = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      if (data && Array.isArray(data.notes)) {
+        data.notes.forEach((n: any) => {
+          addNote(n.title, n.content)
+        })
+        setImported(data.notes.length)
+      } else if (data && data.title && data.content) {
+        addNote(data.title, data.content)
+        setImported(1)
+      }
+    } catch (err) {
+      console.error("Failed to import vault", err)
+    }
+    setTimeout(() => setImported(null), 3000)
+    if (e.target) e.target.value = ""
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
+    let count = 0
+    for (const file of files) {
+      if (file.name.endsWith(".md")) {
+        const text = await file.text()
+        const title = file.name.replace(/\.md$/i, "")
+        addNote(title, text)
+        count++
+      } else if (file.name.endsWith(".json")) {
+        try {
+          const text = await file.text()
+          const data = JSON.parse(text)
+          if (data && Array.isArray(data.notes)) {
+            data.notes.forEach((n: any) => addNote(n.title, n.content))
+            count += data.notes.length
+          } else if (data && data.title && data.content) {
+            addNote(data.title, data.content)
+            count++
+          }
+        } catch {}
+      }
+    }
+    if (count > 0) {
+      setImported(count)
+      setTimeout(() => setImported(null), 3000)
+    }
+  }
+
   if (!isOpen) return null
 
   const formats: Array<{
@@ -349,7 +429,7 @@ export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
           style={{ borderColor: "var(--border-dark)" }}
         >
           <span className="text-sm font-semibold flex-1" style={{ color: "var(--text-primary)" }}>
-            Export
+            Exchange
           </span>
           {note && (
             <span className="text-xs truncate max-w-[160px]" style={{ color: "var(--text-tertiary)" }}>
@@ -361,81 +441,165 @@ export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
           </button>
         </div>
 
-        {/* Format list */}
-        <div className="py-1">
-          {formats.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => exportNote(f.id)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-              style={{ color: "var(--text-primary)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-            >
-              <span style={{ color: "var(--text-tertiary)" }}>{f.icon}</span>
-              <span className="flex-1 text-sm">{f.label}</span>
-              <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>{f.desc}</span>
-              {exported === f.id && <FiCheck size={13} className="text-green-500 shrink-0" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div className="h-px mx-4" style={{ backgroundColor: "var(--border-dark)" }} />
-
-        {/* Vault export */}
-        <div className="px-4 py-3 flex items-center gap-2">
-          <button
-            onClick={exportVault}
-            className="flex-1 flex items-center gap-2 text-sm py-1.5 transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
-          >
-            <FiPackage size={14} />
-            Export vault
-            <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
-              ({notes.length} notes)
-            </span>
-            {exported === "json" && <FiCheck size={13} className="text-green-500" />}
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowBatchMenu(!showBatchMenu)}
-              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md"
-              style={{
-                color: "var(--text-tertiary)",
-                backgroundColor: "var(--bg-panel-inset)",
-                border: "1px solid var(--border-dark)",
-              }}
-            >
-              {batchFormat.toUpperCase()} <FiChevronDown size={9} />
-            </button>
-            {showBatchMenu && (
-              <div
-                className="absolute bottom-full right-0 mb-1 rounded-xl overflow-hidden z-50 py-1"
-                style={{
-                  backgroundColor: "var(--bg-panel)",
-                  border: "1px solid var(--border-mid)",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                }}
+        <Tabs defaultValue="export" className="w-full">
+          <div className="px-4 py-2 border-b" style={{ borderColor: "var(--border-dark)" }}>
+            <TabsList className="w-full grid grid-cols-2 bg-transparent p-0 h-auto">
+              <TabsTrigger
+                value="export"
+                className="py-1.5 text-xs data-[state=active]:bg-panel-inset"
               >
-                {(["markdown", "html", "latex", "txt", "json"] as ExportFormat[]).map((fmt) => (
-                  <button
-                    key={fmt}
-                    onClick={() => { setBatchFormat(fmt); setShowBatchMenu(false) }}
-                    className="w-full text-left px-3 py-1.5 text-xs transition-colors"
-                    style={{ color: fmt === batchFormat ? "var(--text-primary)" : "var(--text-tertiary)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    {fmt.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            )}
+                Export
+              </TabsTrigger>
+              <TabsTrigger
+                value="import"
+                className="py-1.5 text-xs data-[state=active]:bg-panel-inset"
+              >
+                Import
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
+
+          <TabsContent value="export" className="m-0">
+            {/* Format list */}
+            <div className="py-1">
+              {formats.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => exportNote(f.id)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                  style={{ color: "var(--text-primary)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <span style={{ color: "var(--text-tertiary)" }}>{f.icon}</span>
+                  <span className="flex-1 text-sm">{f.label}</span>
+                  <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>{f.desc}</span>
+                  {exported === f.id && <FiCheck size={13} className="text-green-500 shrink-0" />}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="h-px mx-4" style={{ backgroundColor: "var(--border-dark)" }} />
+
+            {/* Vault export */}
+            <div className="px-4 py-3 flex items-center gap-2">
+              <button
+                onClick={exportVault}
+                className="flex-1 flex items-center gap-2 text-sm py-1.5 transition-colors"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+              >
+                <FiPackage size={14} />
+                Export vault
+                <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                  ({notes.length} notes)
+                </span>
+                {exported === "json" && <FiCheck size={13} className="text-green-500" />}
+              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowBatchMenu(!showBatchMenu)}
+                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md"
+                  style={{
+                    color: "var(--text-tertiary)",
+                    backgroundColor: "var(--bg-panel-inset)",
+                    border: "1px solid var(--border-dark)",
+                  }}
+                >
+                  {batchFormat.toUpperCase()} <FiChevronDown size={9} />
+                </button>
+                {showBatchMenu && (
+                  <div
+                    className="absolute bottom-full right-0 mb-1 rounded-xl overflow-hidden z-50 py-1"
+                    style={{
+                      backgroundColor: "var(--bg-panel)",
+                      border: "1px solid var(--border-mid)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {(["markdown", "html", "latex", "txt", "json"] as ExportFormat[]).map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => { setBatchFormat(fmt); setShowBatchMenu(false) }}
+                        className="w-full text-left px-3 py-1.5 text-xs transition-colors"
+                        style={{ color: fmt === batchFormat ? "var(--text-primary)" : "var(--text-tertiary)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {fmt.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="import" className="m-0">
+            <div className="py-2">
+              {/* Import Markdown */}
+              <label className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-panel-inset group">
+                <input
+                  type="file"
+                  multiple
+                  accept=".md"
+                  className="hidden"
+                  onChange={handleImportMarkdown}
+                />
+                <span style={{ color: "var(--text-tertiary)" }}>
+                  <FiFilePlus size={14} className="group-hover:text-primary transition-colors" />
+                </span>
+                <div className="flex-1">
+                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>Import Markdown</div>
+                  <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Select .md files</div>
+                </div>
+                {imported && imported > 0 && <FiCheck size={13} className="text-green-500 shrink-0" />}
+              </label>
+
+              {/* Import Vault */}
+              <label className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-panel-inset group">
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={handleImportVault}
+                />
+                <span style={{ color: "var(--text-tertiary)" }}>
+                  <FiUpload size={14} className="group-hover:text-primary transition-colors" />
+                </span>
+                <div className="flex-1">
+                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>Import Tesserin Vault</div>
+                  <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Select .json backup</div>
+                </div>
+                {imported && imported > 0 && <FiCheck size={13} className="text-green-500 shrink-0" />}
+              </label>
+
+              {imported && (
+                <div className="px-4 py-2 text-[11px] text-green-500 bg-green-500/10 mx-4 my-2 rounded-lg flex items-center gap-2">
+                  <FiCheck size={12} />
+                  Successfully imported {imported} {imported === 1 ? "note" : "notes"}
+                </div>
+              )}
+            </div>
+            
+            <div className="px-4 py-4 text-center">
+              <div 
+                className={`border-2 border-dashed rounded-xl p-6 transition-all border-mid group ${isDragging ? "border-primary bg-primary/5 scale-[0.98]" : "hover:border-primary"}`}
+                style={{ borderColor: isDragging ? "var(--gold)" : "var(--border-dark)" }}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <FiUpload size={24} className={`mx-auto mb-2 transition-colors ${isDragging ? "text-primary opacity-100" : "text-tertiary opacity-40 group-hover:text-primary"}`} />
+                <p className="text-xs" style={{ color: isDragging ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+                  {isDragging ? "Drop to import" : "Drag and drop files here to import"}
+                </p>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Footer hint */}
         <div

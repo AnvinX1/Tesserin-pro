@@ -99,7 +99,7 @@ export function PluginProvider({ children, onNotice, onNavigateTab }: PluginProv
             .filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q))
             .map((n) => ({ id: n.id, title: n.title, content: n.content }))
         },
-        create: (title, content) => addNote(title),
+        create: (title, content) => addNote(title, content),
         update: (id, updates) => updateNote(id, updates),
         delete: (id) => deleteNote(id),
         selectNote: (id) => selectNote(id),
