@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react"
 import {
   FiFileText, FiCode, FiFile, FiCopy, FiCheck,
   FiPrinter, FiBook, FiGlobe, FiPackage, FiChevronDown, FiX,
-  FiUpload, FiFilePlus,
+  FiUpload, FiFilePlus, FiFolder,
 } from "react-icons/fi"
 import { useNotes, type Note } from "@/lib/notes-store"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -215,7 +215,7 @@ function safeName(title: string): string {
 /* ── Component ── */
 
 export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
-  const { notes, addNote } = useNotes()
+  const { notes, addNote, folders, createFolder } = useNotes()
   const [exported, setExported] = useState<string | null>(null)
   const [imported, setImported] = useState<number | null>(null)
   const [batchFormat, setBatchFormat] = useState<ExportFormat>("markdown")
@@ -354,6 +354,59 @@ export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
     } catch (err) {
       console.error("Failed to import vault", err)
     }
+    setTimeout(() => setImported(null), 3000)
+    if (e.target) e.target.value = ""
+  }
+
+  const handleImportObsidian = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    let count = 0
+    const localFolderCache = new Map<string, string>()
+    const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith(".md"))
+    
+    for (const file of mdFiles) {
+      try {
+        const path = (file as any).webkitRelativePath || ""
+        const parts = path.split("/")
+        
+        // Skip the root folder (selected folder name) and the filename
+        const folderPathParts = parts.slice(1, -1)
+        
+        let currentParentId: string | undefined = undefined
+        let currentPathString = ""
+        
+        for (const part of folderPathParts) {
+          currentPathString = currentPathString ? `${currentPathString}/${part}` : part
+          
+          if (localFolderCache.has(currentPathString)) {
+            currentParentId = localFolderCache.get(currentPathString)
+          } else {
+            // Check if folder exists in pre-import state
+            const existing = folders.find(f => f.name === part && f.parentId === (currentParentId || null))
+            
+            if (existing) {
+              currentParentId = existing.id
+              localFolderCache.set(currentPathString, existing.id)
+            } else {
+              const newFolder = await createFolder(part, currentParentId)
+              currentParentId = newFolder.id
+              localFolderCache.set(currentPathString, newFolder.id)
+            }
+          }
+        }
+        
+        const text = await file.text()
+        const title = file.name.replace(/\.md$/i, "")
+        addNote(title, text, currentParentId)
+        count++
+      } catch (err) {
+        console.error("Obsidian import error", err)
+      }
+    }
+    
+    setImported(count)
     setTimeout(() => setImported(null), 3000)
     if (e.target) e.target.value = ""
   }
@@ -570,8 +623,28 @@ export function ExportPanel({ isOpen, onClose, note }: ExportPanelProps) {
                   <FiUpload size={14} className="group-hover:text-primary transition-colors" />
                 </span>
                 <div className="flex-1">
-                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>Import Tesserin Vault</div>
+                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>Import Tesserin Archive</div>
                   <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Select .json backup</div>
+                </div>
+                {imported && imported > 0 && <FiCheck size={13} className="text-green-500 shrink-0" />}
+              </label>
+
+              {/* Import Obsidian Vault */}
+              <label className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-panel-inset group">
+                <input
+                  type="file"
+                  webkitdirectory=""
+                  directory=""
+                  {...({ webkitdirectory: "", directory: "" } as any)}
+                  className="hidden"
+                  onChange={handleImportObsidian}
+                />
+                <span style={{ color: "var(--text-tertiary)" }}>
+                  <FiFolder size={14} className="group-hover:text-primary transition-colors" />
+                </span>
+                <div className="flex-1">
+                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>Import Obsidian Vault</div>
+                  <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Select vault folder (maintains structure)</div>
                 </div>
                 {imported && imported > 0 && <FiCheck size={13} className="text-green-500 shrink-0" />}
               </label>
