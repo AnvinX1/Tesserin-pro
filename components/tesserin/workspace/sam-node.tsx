@@ -988,7 +988,7 @@ export function SAMNode() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <div
-          className="h-12 border-b flex items-center px-4 justify-between shrink-0"
+          className="h-12 border-b flex items-center pl-[72px] pr-4 justify-between shrink-0"
           style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
         >
           <div className="flex items-center gap-3">

@@ -856,7 +856,7 @@ export function D3GraphView() {
     <div className="flex flex-col h-full w-full">
       {/* ── Toolbar ── */}
       <div
-        className="h-12 border-b flex items-center px-4 justify-between shrink-0"
+        className="h-12 border-b flex items-center pl-[72px] pr-4 justify-between shrink-0"
         style={{
           borderColor: "var(--border-dark)",
           background: "var(--bg-panel)",
@@ -872,9 +872,8 @@ export function D3GraphView() {
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                className={`skeuo-btn px-3 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 hover:brightness-110 transition-all ${
-                  mode === m.id ? "active" : ""
-                }`}
+                className={`skeuo-btn px-3 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 hover:brightness-110 transition-all ${mode === m.id ? "active" : ""
+                  }`}
                 style={{ minWidth: "78px", justifyContent: "center" }}
                 aria-label={`Switch to ${m.label} layout`}
               >
@@ -988,9 +987,9 @@ export function D3GraphView() {
           </button>
         </div>
 
-        {/* Active mode HUD */}
+        {/* Active mode HUD — shifted for Split button */}
         <div
-          className="absolute top-4 left-4 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
+          className="absolute top-4 left-20 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
           style={{
             color: "var(--accent-primary)",
             opacity: 0.6,

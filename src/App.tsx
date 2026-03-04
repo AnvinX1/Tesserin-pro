@@ -142,6 +142,7 @@ function AppContent() {
         },
         [dismissOnboarding, addNote, updateNote],
     )
+
     const { panels } = usePlugins()
     const canvasStore = useCanvasStore()
     const { splitState, openSplit, closeSplit, setSecondaryView, setSecondaryNote, toggleDirection } = useSplitPanes()

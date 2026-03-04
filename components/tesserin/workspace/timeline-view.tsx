@@ -192,7 +192,7 @@ export function TimelineView() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div
-        className="px-6 py-4 border-b flex-shrink-0"
+        className="px-6 py-4 border-b flex-shrink-0 flex items-center pl-[72px]"
         style={{ borderColor: "var(--border-dark)" }}
       >
         <div className="flex items-center justify-between mb-3">
