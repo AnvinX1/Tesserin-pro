@@ -209,6 +209,7 @@ function registerIpcHandlers() {
     electron_1.ipcMain.handle('db:settings:get', (_e, key) => db.getSetting(requireString(key, 'key')));
     electron_1.ipcMain.handle('db:settings:set', (_e, key, value) => db.setSetting(requireString(key, 'key'), requireString(value, 'value')));
     electron_1.ipcMain.handle('db:settings:getAll', () => db.getAllSettings());
+    electron_1.ipcMain.handle('db:clear', () => db.clearAllData());
     // ── Canvases ──────────────────────────────────────────────────────
     electron_1.ipcMain.handle('db:canvases:list', () => db.listCanvases());
     electron_1.ipcMain.handle('db:canvases:get', (_e, id) => db.getCanvas(validateId(id, 'id')));

@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initDatabase = initDatabase;
+exports.seedDatabase = seedDatabase;
+exports.clearAllData = clearAllData;
 exports.listNotes = listNotes;
 exports.getNote = getNote;
 exports.getNoteByTitle = getNoteByTitle;
@@ -204,6 +206,22 @@ function seedDatabase() {
         insertSetting.run('editor.lineNumbers', 'true');
     });
     seedTx();
+}
+/**
+ * Clear ALL data from the database and re-seed defaults.
+ */
+function clearAllData() {
+    const tables = [
+        'folders', 'notes', 'tags', 'note_tags', 'tasks',
+        'templates', 'settings', 'canvases', 'api_keys'
+    ];
+    const resetTx = db.transaction(() => {
+        for (const table of tables) {
+            db.prepare(`DELETE FROM ${table}`).run();
+        }
+    });
+    resetTx();
+    seedDatabase();
 }
 // ── Note Operations ───────────────────────────────────────────────────
 function listNotes() {

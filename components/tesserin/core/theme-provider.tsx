@@ -60,6 +60,8 @@ const THEME_STYLES = `
     --bg-app: #050505;
     --bg-panel: linear-gradient(145deg, #111111, #080808);
     --bg-panel-inset: #000000;
+    --bg-menu-obsidian: #0a0a0a;
+    --text-on-obsidian: #ededed;
 
     --text-primary: #ededed;
     --text-secondary: #888888;
@@ -90,6 +92,8 @@ const THEME_STYLES = `
     --bg-app: #f8f6f1;
     --bg-panel: linear-gradient(145deg, #faf8f4, #f3f0e8);
     --bg-panel-inset: #eee9dc;
+    --bg-menu-obsidian: #1a1a1b;
+    --text-on-obsidian: #f5f3ed;
 
     --text-primary: #33302b;
     --text-secondary: #6e6960;

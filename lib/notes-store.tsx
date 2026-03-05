@@ -460,14 +460,30 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   const deleteFolderHandler = useCallback(
     (id: string) => {
-      setFolders((prev) => prev.filter((f) => f.id !== id))
-      // Move notes in this folder to root
-      setNotes((prev) =>
-        prev.map((n) => (n.folderId === id ? { ...n, folderId: null } : n)),
-      )
-      storage.deleteFolder(id).catch(() => { })
+      // Find all descendant folder IDs recursively
+      const getAllDescendantFolderIds = (folderId: string): string[] => {
+        const children = folders.filter((f) => f.parentId === folderId)
+        return [folderId, ...children.flatMap((c) => getAllDescendantFolderIds(c.id))]
+      }
+
+      const allFolderIds = getAllDescendantFolderIds(id)
+
+      // Find all notes in these folders
+      const notesToDelete = notes.filter((n) => n.folderId && allFolderIds.includes(n.folderId))
+      
+      // Delete notes from storage
+      notesToDelete.forEach((n) => storage.deleteNote(n.id).catch(() => { }))
+      
+      // Delete folders from storage
+      allFolderIds.forEach((folderId) => {
+        storage.deleteFolder(folderId).catch(() => { })
+      })
+
+      // Update state
+      setNotes((prev) => prev.filter((n) => !n.folderId || !allFolderIds.includes(n.folderId)))
+      setFolders((prev) => prev.filter((f) => !allFolderIds.includes(f.id)))
     },
-    [],
+    [notes, folders],
   )
 
   const value = useMemo<NotesContextValue>(

@@ -3,6 +3,14 @@ import Database from 'better-sqlite3';
  * Initialize the database with schema and seed data.
  */
 export declare function initDatabase(): void;
+/**
+ * Seed the database with starter content.
+ */
+export declare function seedDatabase(): void;
+/**
+ * Clear ALL data from the database and re-seed defaults.
+ */
+export declare function clearAllData(): void;
 export declare function listNotes(): unknown[];
 export declare function getNote(id: string): unknown;
 export declare function getNoteByTitle(title: string): unknown;
