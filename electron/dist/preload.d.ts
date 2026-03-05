@@ -83,6 +83,7 @@ declare const tesserinAPI: {
             }) => Promise<any>;
             delete: (id: string) => Promise<any>;
         };
+        clear: () => Promise<any>;
     };
     ai: {
         chat: (messages: Array<{

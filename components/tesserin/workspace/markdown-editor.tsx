@@ -1,7 +1,11 @@
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
+<<<<<<< HEAD
+import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiClock, FiColumns } from "react-icons/fi"
+=======
 import { FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiMenu } from "react-icons/fi"
+>>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
 import { renderMarkdown } from "@/lib/markdown-renderer"
 import {
@@ -319,8 +323,12 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary,
 
           {showNoteList && (
             <div
-              className="absolute top-full left-0 mt-1 w-64 max-h-80 overflow-y-auto skeuo-panel z-50 py-1.5 custom-scrollbar"
-              style={{ background: "var(--bg-panel)" }}
+              className="absolute top-full left-0 mt-1 w-64 max-h-80 overflow-y-auto skeuo-panel z-50 py-1.5 custom-scrollbar border shadow-2xl"
+              style={{ 
+                backgroundColor: "var(--bg-menu-obsidian)",
+                borderColor: "rgba(255,255,255,0.08)",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)",
+              }}
             >
               {notes.map((n) => (
                 <button
@@ -331,12 +339,12 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary,
                   }}
                   className="w-full text-left px-4 py-2 text-[11px] flex items-center justify-between group transition-colors hover:bg-white/5"
                   style={{
-                    color: n.id === effectiveNoteId ? "var(--accent-primary)" : "var(--text-secondary)",
+                    color: n.id === effectiveNoteId ? "var(--accent-primary)" : "var(--text-on-obsidian)",
                     fontWeight: n.id === effectiveNoteId ? 600 : 400,
                   }}
                 >
                   <span className="truncate flex-1">{n.title}</span>
-                  <span className="text-[9px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-tertiary)" }}>
+                  <span className="text-[9px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-on-obsidian)", opacity: 0.5 }}>
                     {relativeTime(n.updatedAt)}
                   </span>
                 </button>
@@ -347,19 +355,33 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary,
 
         {/* Center: View mode pill */}
         <div className="flex items-center gap-1 skeuo-inset p-0.5 rounded-lg">
-          {(["edit", "split", "preview"] as const).map((mode) => (
+          {([
+            { id: "edit" as const, icon: FiEdit2 },
+            { id: "split" as const, icon: FiColumns },
+            { id: "preview" as const, icon: FiEye },
+          ]).map((mode) => (
             <button
+<<<<<<< HEAD
+              key={mode.id}
+              onClick={() => setViewMode(mode.id)}
+              className={`p-1.5 rounded-md transition-all duration-200 ${
+                viewMode === mode.id
+                  ? "shadow-sm"
+                  : "opacity-40 hover:opacity-70"
+=======
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-widest transition-all duration-200 ${
                 viewMode === mode ? "shadow-sm scale-[1.02]" : "opacity-40 hover:opacity-70"
+>>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
               }`}
               style={{
-                background: viewMode === mode ? "var(--accent-primary)" : "transparent",
-                color: viewMode === mode ? "#000" : "var(--text-primary)",
+                background: viewMode === mode.id ? "var(--accent-primary)" : "transparent",
+                color: viewMode === mode.id ? "#000" : "var(--text-primary)",
               }}
+              title={mode.id}
             >
-              {mode}
+              <mode.icon size={14} />
             </button>
           ))}
         </div>

@@ -77,6 +77,7 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
   }, [notes])
 
   /** Filtered and sorted notes */
+  /** Filtered and sorted notes */
   const displayNotes = useMemo(() => {
     let filtered = notes
     if (search.trim()) {
@@ -118,6 +119,8 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
     return sorted
   }, [notes, search, sortMode, backlinkCounts, activeTagFilter])
 
+  const folderNotes = (folderId: string) => displayNotes.filter((n) => n.folderId === folderId)
+
   const toggleFolder = useCallback((id: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev)
@@ -134,11 +137,14 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
     setShowNewTag(false)
   }, [newTagName, newTagColor, createTag])
 
-  const handleCreateFolder = useCallback(async () => {
+  const [creatingInFolderId, setCreatingInFolderId] = useState<string | null>(null)
+
+  const handleCreateFolder = useCallback(async (parentId?: string) => {
     if (!newFolderName.trim()) return
-    await createFolder(newFolderName.trim())
+    await createFolder(newFolderName.trim(), parentId)
     setNewFolderName("")
     setShowNewFolder(false)
+    setCreatingInFolderId(null)
   }, [newFolderName, createFolder])
 
   const handleRenameFolder = useCallback(
@@ -151,47 +157,45 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
   )
 
   /** Render a single note item */
-  const renderNoteItem = (note: Note) => {
+  const renderNoteItem = (note: Note, depth: number = 0) => {
     const isSelected = note.id === selectedNoteId
     const blCount = backlinkCounts.get(note.id) ?? 0
 
     return (
-      <div key={note.id} className="relative group">
+      <div key={note.id} className="relative group" style={{ marginLeft: depth > 0 ? 12 : 0 }}>
         <button
           onClick={() => selectNote(note.id)}
-          className="w-full text-left px-3 py-2 rounded-xl mb-0.5 transition-all duration-150 flex items-start gap-2.5"
+          className="w-full text-left px-3 py-2 rounded-xl mb-1 transition-all duration-150 flex items-start gap-2.5"
           style={{
-            backgroundColor: isSelected ? "var(--accent-primary)" : "transparent",
+            backgroundColor: isSelected ? "var(--accent-primary)" : "var(--bg-panel-inset)",
             color: isSelected ? "var(--text-on-accent)" : "var(--text-secondary)",
             boxShadow: isSelected ? "var(--input-inner-shadow)" : "none",
-          }}
-          onMouseEnter={(e) => {
-            if (!isSelected) e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)"
-          }}
-          onMouseLeave={(e) => {
-            if (!isSelected) e.currentTarget.style.backgroundColor = "transparent"
+            border: isSelected ? "none" : "1px solid var(--border-dark)",
           }}
           aria-current={isSelected ? "true" : undefined}
         >
-          <FiFileText size={14} className="shrink-0 mt-0.5" />
+          <FiFileText size={14} className="shrink-0 mt-0.5" style={{ opacity: isSelected ? 1 : 0.6 }} />
           <div className="flex-1 min-w-0">
             <p
-              className="text-sm font-semibold truncate"
+              className="text-xs font-semibold truncate"
               style={{ color: isSelected ? "var(--text-on-accent)" : "var(--text-primary)" }}
             >
-              {note.title}
+              {note.title || "Untitled"}
+            </p>
+            <p className="text-[10px] mt-0.5 truncate leading-normal" style={{ opacity: 0.6, color: isSelected ? "inherit" : "var(--text-tertiary)" }}>
+              {note.content.replace(/[#*`\[\]]/g, "").substring(0, 40) || "No content..."}
             </p>
             {/* Tags row */}
             {note.tags.length > 0 && (
-              <div className="flex gap-1 mt-0.5 flex-wrap">
+              <div className="flex gap-1 mt-1 flex-wrap">
                 {note.tags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="text-[9px] px-1.5 py-0 rounded-full font-medium"
+                    className="text-[8px] px-1 py-0 rounded-full font-bold"
                     style={{
-                      backgroundColor: tag.color + "22",
+                      backgroundColor: isSelected ? "rgba(0,0,0,0.15)" : tag.color + "22",
                       color: isSelected ? "var(--text-on-accent)" : tag.color,
-                      border: `1px solid ${tag.color}44`,
+                      border: `1px solid ${isSelected ? "transparent" : tag.color + "44"}`,
                     }}
                   >
                     {tag.name}
@@ -199,52 +203,48 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
                 ))}
               </div>
             )}
-            <p className="text-xs mt-0.5 truncate" style={{ opacity: 0.6, color: "var(--text-secondary)" }}>
-              {note.content.replace(/^#.*\n?/gm, "").replace(/\[\[([^\]]+)\]\]/g, "$1").trim().slice(0, 50)}
-            </p>
           </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            {blCount > 0 && (
-              <span
-                className="text-[10px] font-semibold px-1.5 py-0 rounded-md"
-                style={{
-                  backgroundColor: isSelected ? "rgba(0,0,0,0.15)" : "var(--bg-panel-inset)",
-                  color: isSelected ? "var(--text-on-accent)" : "var(--text-tertiary)",
-                }}
-              >
-                {blCount}
-              </span>
-            )}
-          </div>
+          {blCount > 0 && (
+            <div 
+              className="flex items-center gap-0.5 px-1 rounded text-[9px] font-bold shrink-0 mt-0.5"
+              style={{ 
+                backgroundColor: isSelected ? "rgba(0,0,0,0.2)" : "var(--bg-panel)",
+                color: isSelected ? "var(--text-on-accent)" : "var(--accent-primary)" 
+              }}
+            >
+              <FiLink2 size={8} />
+              {blCount}
+            </div>
+          )}
         </button>
-        {/* Tag action button — visible on hover */}
+        {/* Tag action button */}
         <button
           onClick={(e) => { e.stopPropagation(); setTagPopoverNoteId(tagPopoverNoteId === note.id ? null : note.id) }}
-          className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-          style={{ color: "var(--text-tertiary)" }}
-          aria-label="Manage tags"
+          className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/10"
+          style={{ color: isSelected ? "#000" : "var(--text-tertiary)" }}
         >
           <FiTag size={10} />
         </button>
         {/* Tag popover */}
         {tagPopoverNoteId === note.id && (
           <div
-            className="absolute right-0 top-8 z-50 w-48 rounded-xl p-2 shadow-lg border"
+            className="absolute top-full right-0 mt-1 z-50 w-52 rounded-xl p-2.5 shadow-2xl border skeuo-panel"
             style={{
-              backgroundColor: "var(--bg-panel)",
-              borderColor: "var(--border-dark)",
+              backgroundColor: "var(--bg-menu-obsidian)",
+              borderColor: "rgba(255,255,255,0.08)",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[10px] font-bold mb-1 px-1" style={{ color: "var(--text-tertiary)" }}>TAGS</p>
+            <p className="text-[10px] font-bold mb-1.5 px-1 opacity-50" style={{ color: "var(--text-on-obsidian)" }}>TAGS</p>
             {tags.map((tag) => {
               const hasTag = note.tags.some((t) => t.id === tag.id)
               return (
                 <button
                   key={tag.id}
                   onClick={() => hasTag ? removeTagFromNote(note.id, tag.id) : addTagToNote(note.id, tag)}
-                  className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-xs hover:opacity-80 transition-opacity"
-                  style={{ color: "var(--text-primary)" }}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/5"
+                  style={{ color: "var(--text-on-obsidian)" }}
                 >
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
                   <span className="flex-1 text-left truncate">{tag.name}</span>
@@ -252,29 +252,17 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
                 </button>
               )
             })}
-            {tags.length === 0 && (
-              <p className="text-[10px] px-2 py-1" style={{ color: "var(--text-tertiary)" }}>No tags yet</p>
-            )}
             {/* Folder assignment */}
             {folders.length > 0 && (
               <>
-                <div className="border-t my-1" style={{ borderColor: "var(--border-dark)" }} />
-                <p className="text-[10px] font-bold mb-1 px-1" style={{ color: "var(--text-tertiary)" }}>FOLDER</p>
-                <button
-                  onClick={() => moveNoteToFolder(note.id, null)}
-                  className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-xs hover:opacity-80"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  <FiX size={10} />
-                  <span className="flex-1 text-left">No folder</span>
-                  {!note.folderId && <span className="text-[10px]" style={{ color: "var(--accent-primary)" }}>✓</span>}
-                </button>
+                <div className="border-t my-1.5" style={{ borderColor: "var(--border-dark)" }} />
+                <p className="text-[10px] font-bold mb-1 px-1 opacity-50" style={{ color: "var(--text-on-obsidian)" }}>MOVE TO</p>
                 {folders.map((f) => (
                   <button
                     key={f.id}
                     onClick={() => moveNoteToFolder(note.id, f.id)}
-                    className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-xs hover:opacity-80"
-                    style={{ color: "var(--text-primary)" }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/5"
+                    style={{ color: "var(--text-on-obsidian)" }}
                   >
                     <FiFolder size={10} />
                     <span className="flex-1 text-left truncate">{f.name}</span>
@@ -285,7 +273,7 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
             )}
             <button
               onClick={() => setTagPopoverNoteId(null)}
-              className="w-full mt-1 text-center text-[10px] py-1 rounded-lg"
+              className="w-full mt-1.5 text-center text-[10px] py-1 rounded-lg"
               style={{ color: "var(--text-tertiary)" }}
             >
               Done
@@ -296,82 +284,95 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
     )
   }
 
+  /** Render a single folder with its notes and children */
+  const renderFolderItem = (folder: NoteFolder, depth: number = 0): React.ReactNode => {
+    const fNotes = folderNotes(folder.id)
+    const isExpanded = expandedFolders.has(folder.id)
+    const childFolders = folders.filter((f) => f.parentId === folder.id)
+
+    return (
+      <div key={folder.id} style={{ marginLeft: depth > 0 ? 12 : 0 }}>
+        <div className="flex items-center gap-1 group">
+          <button
+            onClick={() => toggleFolder(folder.id)}
+            className="flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {isExpanded ? <FiChevronDown size={12} /> : <FiChevronRight size={12} />}
+            <FiFolder size={12} style={{ color: "var(--accent-primary)" }} />
+            {renamingFolderId === folder.id ? (
+              <input
+                autoFocus
+                value={renamingFolderName}
+                onChange={(e) => setRenamingFolderName(e.target.value)}
+                onBlur={() => handleRenameFolder(folder.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameFolder(folder.id)
+                  if (e.key === "Escape") setRenamingFolderId(null)
+                }}
+                className="flex-1 bg-transparent border-none text-xs focus:outline-none"
+                style={{ color: "var(--text-primary)" }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="truncate">{folder.name}</span>
+            )}
+            <span className="ml-auto text-[10px]" style={{ color: "var(--text-tertiary)" }}>
+              {fNotes.length}
+            </span>
+          </button>
+          <div className="flex opacity-0 group-hover:opacity-60 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); setCreatingInFolderId(folder.id); setShowNewFolder(true) }}
+              className="w-5 h-5 flex items-center justify-center rounded hover:opacity-100"
+              style={{ color: "var(--text-tertiary)" }}
+              title="Add subfolder"
+            >
+              <FiPlus size={10} />
+            </button>
+            <button
+              onClick={() => { setRenamingFolderId(folder.id); setRenamingFolderName(folder.name) }}
+              className="w-5 h-5 flex items-center justify-center rounded hover:opacity-100"
+              style={{ color: "var(--text-tertiary)" }}
+              aria-label="Rename folder"
+            >
+              <FiEdit2 size={10} />
+            </button>
+            <button
+              onClick={() => deleteFolder(folder.id)}
+              className="w-5 h-5 flex items-center justify-center rounded hover:opacity-100"
+              style={{ color: "var(--text-tertiary)" }}
+              aria-label="Delete folder"
+            >
+              <FiTrash2 size={10} />
+            </button>
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="border-l ml-2.5 pl-1.5" style={{ borderColor: "var(--border-dark)" }}>
+            {fNotes.map((n) => renderNoteItem(n, 0))}
+            {childFolders.map((child) => renderFolderItem(child, 0))}
+            {fNotes.length === 0 && childFolders.length === 0 && (
+              <p className="text-[10px] px-3 py-1" style={{ color: "var(--text-tertiary)" }}>Empty</p>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   /** Render folder tree view */
   const renderFolderView = () => {
     const rootNotes = displayNotes.filter((n) => !n.folderId)
-    const folderNotes = (folderId: string) => displayNotes.filter((n) => n.folderId === folderId)
+    const rootFolders = folders.filter((f) => !f.parentId)
 
     return (
       <>
-        {folders.map((folder) => {
-          const fNotes = folderNotes(folder.id)
-          const isExpanded = expandedFolders.has(folder.id)
-
-          return (
-            <div key={folder.id}>
-              <div className="flex items-center gap-1 group">
-                <button
-                  onClick={() => toggleFolder(folder.id)}
-                  className="flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {isExpanded ? <FiChevronDown size={12} /> : <FiChevronRight size={12} />}
-                  <FiFolder size={12} style={{ color: "var(--accent-primary)" }} />
-                  {renamingFolderId === folder.id ? (
-                    <input
-                      autoFocus
-                      value={renamingFolderName}
-                      onChange={(e) => setRenamingFolderName(e.target.value)}
-                      onBlur={() => handleRenameFolder(folder.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleRenameFolder(folder.id)
-                        if (e.key === "Escape") setRenamingFolderId(null)
-                      }}
-                      className="flex-1 bg-transparent border-none text-xs focus:outline-none"
-                      style={{ color: "var(--text-primary)" }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span className="truncate">{folder.name}</span>
-                  )}
-                  <span className="ml-auto text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-                    {fNotes.length}
-                  </span>
-                </button>
-                <div className="flex opacity-0 group-hover:opacity-60 transition-opacity">
-                  <button
-                    onClick={() => { setRenamingFolderId(folder.id); setRenamingFolderName(folder.name) }}
-                    className="w-5 h-5 flex items-center justify-center rounded hover:opacity-100"
-                    style={{ color: "var(--text-tertiary)" }}
-                    aria-label="Rename folder"
-                  >
-                    <FiEdit2 size={10} />
-                  </button>
-                  <button
-                    onClick={() => deleteFolder(folder.id)}
-                    className="w-5 h-5 flex items-center justify-center rounded hover:opacity-100"
-                    style={{ color: "var(--text-tertiary)" }}
-                    aria-label="Delete folder"
-                  >
-                    <FiTrash2 size={10} />
-                  </button>
-                </div>
-              </div>
-              {isExpanded && (
-                <div className="ml-3">
-                  {fNotes.map(renderNoteItem)}
-                  {fNotes.length === 0 && (
-                    <p className="text-[10px] px-3 py-1" style={{ color: "var(--text-tertiary)" }}>Empty</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {rootFolders.map((f) => renderFolderItem(f))}
 
         {/* Unfiled notes */}
         {rootNotes.length > 0 && (
-          <div>
+          <div className="mt-2">
             <div
               className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold"
               style={{ color: "var(--text-tertiary)" }}
@@ -380,7 +381,7 @@ export function NoteSidebar({ visible, onClose }: NoteSidebarProps) {
               <span>Unfiled</span>
               <span className="ml-auto text-[10px]">{rootNotes.length}</span>
             </div>
-            {rootNotes.map(renderNoteItem)}
+            {rootNotes.map((n) => renderNoteItem(n))}
           </div>
         )}
       </>

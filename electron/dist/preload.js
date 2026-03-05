@@ -63,6 +63,7 @@ const tesserinAPI = {
             update: (id, data) => electron_1.ipcRenderer.invoke('db:canvases:update', id, data),
             delete: (id) => electron_1.ipcRenderer.invoke('db:canvases:delete', id),
         },
+        clear: () => electron_1.ipcRenderer.invoke('db:clear'),
     },
     // ── AI (Ollama) ───────────────────────────────────────────────────
     ai: {
