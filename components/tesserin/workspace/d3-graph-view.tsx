@@ -2,16 +2,11 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react"
 import * as d3 from "d3"
-import {
-  FiZoomIn,
-  FiZoomOut,
-  FiMaximize,
-  FiActivity,
-  FiGitBranch,
-  FiTarget,
-} from "react-icons/fi"
+import { FiZoomIn, FiZoomOut, FiMaximize, FiActivity, FiGitBranch, FiTarget, FiPlus } from "react-icons/fi"
 import { useNotes, type GraphNode, type GraphLink } from "@/lib/notes-store"
 import { TesserinLogo } from "../core/tesserin-logo"
+import { TesseradrawLogo } from "./tesseradraw-logo"
+import "@excalidraw/excalidraw/index.css"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -246,12 +241,13 @@ function createGoldenDefs(
  * - Staggered entrance animations for nodes and links
  * - HUD showing node/link count and active mode
  */
-export function D3GraphView() {
+export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void } = {}) {
+  const { graph, selectNote, addNote, notes } = useNotes()
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [mode, setMode] = useState<GraphMode>("force")
   const [, setHoveredNode] = useState<string | null>(null)
-  const { graph, selectNote, selectedNoteId, notes } = useNotes()
+  const selectedNoteId = useNotes().selectedNoteId
 
   // Filter
   const [filterQuery, setFilterQuery] = useState("")
@@ -277,6 +273,12 @@ export function D3GraphView() {
   const currentTransformRef = useRef<d3.ZoomTransform | null>(null)
   /** Tracks the previously rendered mode so we know when the layout is "fresh" */
   const prevModeRef = useRef<GraphMode | null>(null)
+
+  // Keep a ref for selection to avoid full re-renders on every click
+  const selectedNoteIdRef = useRef(selectedNoteId)
+  useEffect(() => {
+    selectedNoteIdRef.current = selectedNoteId
+  }, [selectedNoteId])
 
   /* ---- Main D3 render effect ---- */
   const renderGraph = useCallback(() => {
@@ -451,18 +453,18 @@ export function D3GraphView() {
         .append("circle")
         .attr("r", (d) => Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)))
         .attr("fill", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
             : "var(--graph-node)",
         )
         .attr("stroke", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
             : "var(--border-mid)",
         )
-        .attr("stroke-width", (d) => (d.id === selectedNoteId ? 2.5 : 1))
+        .attr("stroke-width", (d) => (d.id === selectedNoteIdRef.current ? 2.5 : 1))
         .attr("filter", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "url(#gold-glow-active)"
             : "url(#gold-glow)",
         )
@@ -478,14 +480,14 @@ export function D3GraphView() {
         )
         .attr("text-anchor", "middle")
         .attr("fill", (d) =>
-          d.id === selectedNoteId ? "#FACC15" : "var(--text-primary)",
+          d.id === selectedNoteIdRef.current ? "#FACC15" : "var(--text-primary)",
         )
-        .attr("font-size", (d) => (d.id === selectedNoteId ? 12 : 10))
-        .attr("font-weight", (d) => (d.id === selectedNoteId ? 700 : 500))
+        .attr("font-size", (d) => (d.id === selectedNoteIdRef.current ? 12 : 10))
+        .attr("font-weight", (d) => (d.id === selectedNoteIdRef.current ? 700 : 500))
         .attr("font-family", "var(--font-sans)")
         .style("pointer-events", "none")
         .style("filter", "url(#text-glow)")
-        .style("opacity", (d) => (d.id === selectedNoteId ? 1 : 0.85))
+        .style("opacity", (d) => (d.id === selectedNoteIdRef.current ? 1 : 0.85))
         .style("transition", "opacity 0.25s, fill 0.25s, font-size 0.25s")
 
       // Hover: intensify glow + brighten label
@@ -503,7 +505,7 @@ export function D3GraphView() {
           .attr("font-weight", "700")
       })
       nodeGroup.on("mouseleave.glow", function (_event, d: any) {
-        if (d.id !== selectedNoteId) {
+        if (d.id !== selectedNoteIdRef.current) {
           const group = d3.select(this)
           group
             .select("circle")
@@ -604,18 +606,18 @@ export function D3GraphView() {
         .append("circle")
         .attr("r", (d) => Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)))
         .attr("fill", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
             : "var(--graph-node)",
         )
         .attr("stroke", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
             : "var(--border-mid)",
         )
-        .attr("stroke-width", (d) => (d.id === selectedNoteId ? 2.5 : 1))
+        .attr("stroke-width", (d) => (d.id === selectedNoteIdRef.current ? 2.5 : 1))
         .attr("filter", (d) =>
-          d.id === selectedNoteId
+          d.id === selectedNoteIdRef.current
             ? "url(#gold-glow-active)"
             : "url(#gold-glow)",
         )
@@ -631,14 +633,14 @@ export function D3GraphView() {
         )
         .attr("text-anchor", "middle")
         .attr("fill", (d) =>
-          d.id === selectedNoteId ? "#FACC15" : "var(--text-primary)",
+          d.id === selectedNoteIdRef.current ? "#FACC15" : "var(--text-primary)",
         )
-        .attr("font-size", (d) => (d.id === selectedNoteId ? 12 : 10))
-        .attr("font-weight", (d) => (d.id === selectedNoteId ? 700 : 500))
+        .attr("font-size", (d) => (d.id === selectedNoteIdRef.current ? 12 : 10))
+        .attr("font-weight", (d) => (d.id === selectedNoteIdRef.current ? 700 : 500))
         .attr("font-family", "var(--font-sans)")
         .style("pointer-events", "none")
         .style("filter", "url(#text-glow)")
-        .style("opacity", (d) => (d.id === selectedNoteId ? 1 : 0.85))
+        .style("opacity", (d) => (d.id === selectedNoteIdRef.current ? 1 : 0.85))
 
       // Hover effects
       nodeGroup.on("mouseenter.glow", function () {
@@ -655,7 +657,7 @@ export function D3GraphView() {
           .attr("font-weight", "700")
       })
       nodeGroup.on("mouseleave.glow", function (_event, d: any) {
-        if (d.id !== selectedNoteId) {
+        if (d.id !== selectedNoteIdRef.current) {
           const group = d3.select(this)
           group
             .select("circle")
@@ -834,7 +836,42 @@ export function D3GraphView() {
         fitToPositions(positions, false)
       }
     }
-  }, [graph, mode, selectNote, selectedNoteId])
+  }, [graph, mode, selectNote])
+
+  /* ---- Selection change: update node styles without full re-render ---- */
+  useEffect(() => {
+    if (!svgRef.current) return
+    const svg = d3.select(svgRef.current)
+
+    // Update nodes
+    svg.selectAll(".graph-node circle")
+      .attr("fill", (d: any) =>
+        d.id === selectedNoteId
+          ? "var(--accent-primary)"
+          : "var(--graph-node)",
+      )
+      .attr("stroke", (d: any) =>
+        d.id === selectedNoteId
+          ? "var(--accent-primary)"
+          : "var(--border-mid)",
+      )
+      .attr("stroke-width", (d: any) => (d.id === selectedNoteId ? 2.5 : 1))
+      .attr("filter", (d: any) =>
+        d.id === selectedNoteId
+          ? "url(#gold-glow-active)"
+          : "url(#gold-glow)",
+      )
+
+    // Update text
+    svg.selectAll(".graph-node text")
+      .attr("fill", (d: any) =>
+        d.id === selectedNoteId ? "#FACC15" : "var(--text-primary)",
+      )
+      .attr("font-size", (d: any) => (d.id === selectedNoteId ? 12 : 10))
+      .attr("font-weight", (d: any) => (d.id === selectedNoteId ? 700 : 500))
+      .style("opacity", (d: any) => (d.id === selectedNoteId ? 1 : 0.85))
+
+  }, [selectedNoteId])
 
   /* ---- Re-render when graph, mode, or selection changes ---- */
   useEffect(() => {
@@ -994,10 +1031,59 @@ export function D3GraphView() {
           className="w-full h-full"
           role="application"
           aria-label={`Knowledge graph — ${mode} layout with ${graph.nodes.length} notes`}
+          style={{ display: graph.nodes.length === 0 ? "none" : "block" }}
         />
 
+        {/* Empty State — matches Tesseradraw WelcomeScreen style */}
+        {graph.nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-700">
+              <TesseradrawLogo size={120} animated />
+              <h1
+                className="mt-6 mb-2"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "3rem",
+                  fontWeight: 400,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Create Your First Note
+              </h1>
+              <p
+                className="mb-8 max-w-sm"
+                style={{
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "1.1rem",
+                  opacity: 0.5,
+                  fontWeight: 400,
+                  color: "var(--text-primary)"
+                }}
+              >
+                Connect your ideas and watch your knowledge graph grow.
+              </p>
+
+              <button
+                onClick={() => {
+                  addNote()
+                  onNavigate?.("notes")
+                }}
+                className="skeuo-btn px-8 py-3 rounded-2xl flex items-center gap-3 text-sm font-bold transition-all hover:scale-105 active:scale-95"
+                style={{
+                  color: "var(--accent-primary)",
+                  boxShadow: "0 10px 30px rgba(250, 204, 21, 0.15)"
+                }}
+              >
+                <FiPlus size={18} />
+                New Note
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hover tooltip */}
-        {tooltip && (
+        {tooltip && graph.nodes.length > 0 && (
           <div
             className="absolute pointer-events-none z-20 max-w-[200px] rounded-xl p-3"
             style={{
@@ -1026,46 +1112,50 @@ export function D3GraphView() {
         )}
 
         {/* Zoom controls */}
-        <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-          <button
-            onClick={() => handleZoom(1.3)}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Zoom in"
-          >
-            <FiZoomIn size={18} />
-          </button>
-          <button
-            onClick={() => handleZoom(0.7)}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Zoom out"
-          >
-            <FiZoomOut size={18} />
-          </button>
-          <button
-            onClick={resetView}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Reset view"
-          >
-            <FiMaximize size={18} />
-          </button>
-        </div>
+        {graph.nodes.length > 0 && (
+          <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+            <button
+              onClick={() => handleZoom(1.3)}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Zoom in"
+            >
+              <FiZoomIn size={18} />
+            </button>
+            <button
+              onClick={() => handleZoom(0.7)}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Zoom out"
+            >
+              <FiZoomOut size={18} />
+            </button>
+            <button
+              onClick={resetView}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Reset view"
+            >
+              <FiMaximize size={18} />
+            </button>
+          </div>
+        )}
 
         {/* Active mode HUD — shifted for Split button */}
-        <div
-          className="absolute top-4 left-20 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
-          style={{
-            color: "var(--accent-primary)",
-            opacity: 0.6,
-            letterSpacing: "0.05em",
-          }}
-        >
-          <TesserinLogo size={16} animated={false} />
-          MODE: {mode.toUpperCase()} | PHYSICS:{" "}
-          {mode === "force" ? "ACTIVE" : "STATIC"}
-        </div>
+        {graph.nodes.length > 0 && (
+          <div
+            className="absolute top-4 left-20 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
+            style={{
+              color: "var(--accent-primary)",
+              opacity: 0.6,
+              letterSpacing: "0.05em",
+            }}
+          >
+            <TesserinLogo size={16} animated={false} />
+            MODE: {mode.toUpperCase()} | PHYSICS:{" "}
+            {mode === "force" ? "ACTIVE" : "STATIC"}
+          </div>
+        )}
       </div>
     </div>
   )

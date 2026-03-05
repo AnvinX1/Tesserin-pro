@@ -381,7 +381,7 @@ export function sandboxAPI(
       selectNote: guarded(pluginId, "vault:read", perms, rawApi.vault.selectNote),
     },
     settings: {
-      get: guarded(pluginId, "settings:read", perms, rawApi.settings.get),
+      get: guardedRead(pluginId, "settings:read", perms, rawApi.settings.get),
       set: guarded(pluginId, "settings:write", perms, rawApi.settings.set, true),
     },
     ui: {

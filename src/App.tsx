@@ -221,7 +221,7 @@ function AppContent() {
                     onSplitOpen={splitState.isActive ? undefined : () => openSplit("canvas")}
                 />
             case "graph":
-                return <D3GraphView key={key} />
+                return <D3GraphView key={key} onNavigate={handleSetActiveTab} />
             case "settings":
                 return <SettingsPanel key={key} />
             default: {
