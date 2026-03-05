@@ -240,12 +240,13 @@ function createGoldenDefs(
  * - Staggered entrance animations for nodes and links
  * - HUD showing node/link count and active mode
  */
-export function D3GraphView() {
+export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void } = {}) {
+  const { graph, selectNote, addNote, notes } = useNotes()
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [mode, setMode] = useState<GraphMode>("force")
   const [, setHoveredNode] = useState<string | null>(null)
-  const { graph, selectNote, selectedNoteId, notes } = useNotes()
+  const selectedNoteId = useNotes().selectedNoteId
 
   // Filter
   const [filterQuery, setFilterQuery] = useState("")
@@ -1063,8 +1064,10 @@ export function D3GraphView() {
               </p>
 
               <button
-                onClick={() => selectNote(null)} // This usually opens the search or new note dialog in various systems, but let's assume we want a new note button.
-                // Wait, useNotes has addNote. 
+                onClick={() => {
+                  addNote()
+                  onNavigate?.("notes")
+                }}
                 className="skeuo-btn px-8 py-3 rounded-2xl flex items-center gap-3 text-sm font-bold transition-all hover:scale-105 active:scale-95"
                 style={{
                   color: "var(--accent-primary)",
