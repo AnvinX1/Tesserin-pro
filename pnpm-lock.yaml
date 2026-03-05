@@ -240,6 +240,9 @@ importers:
       electron-builder:
         specifier: ^25.0.0
         version: 25.1.8(electron-builder-squirrel-windows@25.1.8)
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
