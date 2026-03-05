@@ -125,6 +125,12 @@ function AppContent() {
     }, [])
 
     const [showNotes, setShowNotes] = useState(true)
+
+    // Switching to the Notes tab from another tab always shows the sidebar.
+    const handleSetActiveTab = useCallback((tab: TabId) => {
+        setActiveTab(tab)
+        if (tab === "notes") setShowNotes(true)
+    }, [])
     const [showSearch, setShowSearch] = useState(false)
     const [showExport, setShowExport] = useState(false)
     const [showTemplates, setShowTemplates] = useState(false)
@@ -197,22 +203,34 @@ function AppContent() {
 
     // Render callback for universal panes
     const renderView = useCallback((viewType: string, props: PaneRenderProps) => { // eslint-disable-line react-hooks/exhaustive-deps
+        const key = `${props.paneId}-${viewType}`
         switch (viewType) {
             case "notes":
-                return <MarkdownEditor noteId={props.noteId} onSelectNote={props.onSelectNote} isSecondary={props.isSecondary} />
+                return <MarkdownEditor
+                    key={key}
+                    noteId={props.noteId}
+                    onSelectNote={props.isSecondary ? setSecondaryNote : props.onSelectNote}
+                    isSecondary={props.isSecondary}
+                    showSidebar={props.isSecondary ? undefined : showNotes}
+                    onToggleSidebar={props.isSecondary ? undefined : () => setShowNotes(p => !p)}
+                />
             case "canvas":
-                return <CreativeCanvas onSplitOpen={splitState.isActive ? undefined : () => openSplit("canvas")} />
+                return <CreativeCanvas
+                    key={key}
+                    paneId={props.paneId}
+                    onSplitOpen={splitState.isActive ? undefined : () => openSplit("canvas")}
+                />
             case "graph":
-                return <D3GraphView />
+                return <D3GraphView key={key} />
             case "settings":
-                return <SettingsPanel />
+                return <SettingsPanel key={key} />
             default: {
                 const panel = panels.find((p) => p.location === "workspace" && p.id === viewType)
-                if (panel) return <panel.component />
+                if (panel) return <panel.component key={key} />
                 return null
             }
         }
-    }, [panels, splitState.isActive, openSplit])
+    }, [panels, splitState.isActive, openSplit, setSecondaryNote])
 
     // Feature toggles — control which features are shown
     const [features, setFeatures] = useState<Record<string, boolean>>({})
@@ -352,7 +370,7 @@ function AppContent() {
                     {/* ── Left Dock ── */}
                     <LeftDock
                         activeTab={activeTab}
-                        setActiveTab={setActiveTab}
+                        setActiveTab={handleSetActiveTab}
                         splitActive={splitState.isActive}
                         onSplitOpen={() => openSplit()}
                         onSplitClose={closeSplit}

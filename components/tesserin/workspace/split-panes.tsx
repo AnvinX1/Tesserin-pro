@@ -291,12 +291,41 @@ export function SplitPaneLayout({
       className={`w-full h-full flex ${isHorizontal ? "flex-row" : "flex-col"}`}
       style={{ cursor: isDragging ? (isHorizontal ? "col-resize" : "row-resize") : undefined }}
     >
-      {/* Primary pane — no header; active tab shown in LeftDock */}
+      {/* Primary pane — minimal header matching secondary pane height */}
       <div
-        className="overflow-hidden min-w-0 min-h-0"
+        className="flex flex-col overflow-hidden min-w-0 min-h-0"
         style={{ [isHorizontal ? "width" : "height"]: primarySize, flexShrink: 0 }}
       >
-        {renderView(primaryViewType, { paneId: "primary" })}
+        <div
+          className="pane-header h-8 flex items-center gap-1 px-2 border-b shrink-0 select-none"
+          style={{ borderColor: "var(--border-dark)" }}
+        >
+          {(() => {
+            const cv = views.find((v) => v.id === primaryViewType)
+            return cv ? (
+              <div className="flex items-center gap-1.5 px-1 text-[10px] font-medium" style={{ color: "var(--text-tertiary)" }}>
+                <cv.icon size={11} />
+                <span>{cv.label}</span>
+              </div>
+            ) : null
+          })()}
+          <div className="flex-1" />
+          {onDirectionToggle && (
+            <button
+              onClick={onDirectionToggle}
+              className="p-1 rounded-md transition-all duration-100"
+              title={`Switch to ${direction === "horizontal" ? "vertical" : "horizontal"} split`}
+              style={{ color: "var(--text-tertiary)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
+            >
+              {direction === "horizontal" ? <FiArrowRight size={11} /> : <FiArrowDown size={11} />}
+            </button>
+          )}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {renderView(primaryViewType, { paneId: "primary" })}
+        </div>
       </div>
 
       {/* Divider */}
@@ -333,7 +362,6 @@ export function SplitPaneLayout({
           onViewChange={onSecondaryViewChange}
           onClose={onSplitClose}
           isSecondary
-          onToggleDirection={onDirectionToggle}
           direction={direction}
         />
         <div className="flex-1 min-h-0 overflow-hidden">

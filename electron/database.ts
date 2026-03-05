@@ -205,8 +205,8 @@ export function getNoteByTitle(title: string) {
     return db.prepare('SELECT * FROM notes WHERE title = ? COLLATE NOCASE').get(title)
 }
 
-export function createNote(data: { title?: string; content?: string; folderId?: string }) {
-    const id = randomUUID()
+export function createNote(data: { id?: string; title?: string; content?: string; folderId?: string }) {
+    const id = data.id || randomUUID()
     const title = data.title || 'Untitled'
     const content = data.content || ''
     db.prepare(

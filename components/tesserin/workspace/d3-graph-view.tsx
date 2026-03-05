@@ -222,28 +222,6 @@ function createGoldenDefs(
   textMerge.append("feMergeNode").attr("in", "shadow")
   textMerge.append("feMergeNode").attr("in", "SourceGraphic")
 
-  /* Warm ambient radial gradient (obsidian vignetting) */
-  const radialGrad = defs
-    .append("radialGradient")
-    .attr("id", "graph-ambience")
-    .attr("cx", "50%")
-    .attr("cy", "50%")
-    .attr("r", "60%")
-  radialGrad
-    .append("stop")
-    .attr("offset", "0%")
-    .attr("stop-color", "#050505")
-    .attr("stop-opacity", "0")
-  radialGrad
-    .append("stop")
-    .attr("offset", "70%")
-    .attr("stop-color", "#050505")
-    .attr("stop-opacity", "0.05")
-  radialGrad
-    .append("stop")
-    .attr("offset", "100%")
-    .attr("stop-color", "#050505")
-    .attr("stop-opacity", "0.15")
 }
 
 /* ------------------------------------------------------------------ */
@@ -295,6 +273,10 @@ export function D3GraphView() {
 
   const simulationRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null)
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  /** Persists the user's current zoom/pan across re-renders that don't change mode */
+  const currentTransformRef = useRef<d3.ZoomTransform | null>(null)
+  /** Tracks the previously rendered mode so we know when the layout is "fresh" */
+  const prevModeRef = useRef<GraphMode | null>(null)
 
   /* ---- Main D3 render effect ---- */
   const renderGraph = useCallback(() => {
@@ -302,8 +284,20 @@ export function D3GraphView() {
 
     const svg = d3.select(svgRef.current)
     const container = containerRef.current
-    const width = container.clientWidth
-    const height = container.clientHeight
+
+    // getBoundingClientRect is more reliable than clientWidth/Height inside flex
+    const svgRect = svgRef.current.getBoundingClientRect()
+    const width = svgRect.width > 0 ? Math.round(svgRect.width) : container.clientWidth
+    const height = svgRect.height > 0 ? Math.round(svgRect.height) : container.clientHeight
+    if (width === 0 || height === 0) return
+
+    // Give the SVG element explicit dimensions so D3 internals always agree
+    svg.attr("width", width).attr("height", height)
+
+    // Determine if this is a layout-changing render (mode/first load) vs. a
+    // lightweight re-render caused only by a selection change.
+    const isFreshMode = prevModeRef.current !== mode
+    prevModeRef.current = mode
 
     // Clean up previous
     svg.selectAll("*").remove()
@@ -331,28 +325,54 @@ export function D3GraphView() {
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 6])
+      .scaleExtent([0.05, 8])
       .on("zoom", (event) => {
         g.attr("transform", event.transform)
+        // Persist so the next re-render can restore the user's position
+        currentTransformRef.current = event.transform
       })
 
     svg.call(zoom)
     zoomRef.current = zoom
 
-    // Initial transform: center
-    const initialTransform = d3.zoomIdentity
-      .translate(width / 2, height / 2)
-      .scale(0.85)
-    svg.call(zoom.transform, initialTransform)
+    // On a fresh layout (mode change / first load) reset to a centered view;
+    // that view will be auto-fitted after the graph settles.
+    // On a selection-only re-render, restore the saved transform so the
+    // viewport does NOT jump.
+    if (isFreshMode || !currentTransformRef.current) {
+      svg.call(
+        zoom.transform,
+        d3.zoomIdentity.translate(width / 2, height / 2).scale(0.85),
+      )
+    } else {
+      svg.call(zoom.transform, currentTransformRef.current)
+    }
 
-    // Ambient background glow
-    g.append("rect")
-      .attr("x", -width * 2)
-      .attr("y", -height * 2)
-      .attr("width", width * 5)
-      .attr("height", height * 5)
-      .attr("fill", "url(#graph-ambience)")
-      .style("pointer-events", "none")
+    /** Fit all given graph-space positions into the viewport */
+    const fitToPositions = (
+      positions: { x: number; y: number }[],
+      animated = true,
+    ) => {
+      if (!positions.length || !zoomRef.current) return
+      const xs = positions.map((p) => p.x)
+      const ys = positions.map((p) => p.y)
+      const minX = Math.min(...xs), maxX = Math.max(...xs)
+      const minY = Math.min(...ys), maxY = Math.max(...ys)
+      const pad = 80
+      const scale = Math.min(
+        width / (maxX - minX + pad * 2),
+        height / (maxY - minY + pad * 2),
+        1.5,
+      )
+      const tx = width / 2 - ((minX + maxX) / 2) * scale
+      const ty = height / 2 - ((minY + maxY) / 2) * scale
+      const t = d3.zoomIdentity.translate(tx, ty).scale(scale)
+      if (animated) {
+        svg.transition().duration(600).ease(d3.easeCubicOut).call(zoom.transform, t)
+      } else {
+        svg.call(zoom.transform, t)
+      }
+    }
 
     /* ---- Shared rendering helpers ---- */
 
@@ -695,6 +715,13 @@ export function D3GraphView() {
           (d) => `translate(${d.x ?? 0}, ${d.y ?? 0})`,
         )
       })
+
+      // Auto-fit once the simulation settles (only on fresh layouts)
+      if (isFreshMode || !currentTransformRef.current) {
+        simulation.on("end.fit", () => {
+          fitToPositions(simNodes.map((n) => ({ x: n.x ?? 0, y: n.y ?? 0 })))
+        })
+      }
     }
 
     /* ---- MIND MAP (Tree) MODE ---- */
@@ -744,6 +771,10 @@ export function D3GraphView() {
       }))
 
       renderNodes(positions, false)
+      // Auto-fit the tree layout into the viewport on fresh renders
+      if (isFreshMode || !currentTransformRef.current) {
+        fitToPositions(positions, false)
+      }
     }
 
     /* ---- RADIAL MODE ---- */
@@ -798,6 +829,10 @@ export function D3GraphView() {
       })
 
       renderNodes(positions, false)
+      // Auto-fit the radial layout into the viewport on fresh renders
+      if (isFreshMode || !currentTransformRef.current) {
+        fitToPositions(positions, false)
+      }
     }
   }, [graph, mode, selectNote, selectedNoteId])
 
@@ -831,7 +866,16 @@ export function D3GraphView() {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const observer = new ResizeObserver(() => renderGraph())
+    let prevW = container.clientWidth, prevH = container.clientHeight
+    const observer = new ResizeObserver(() => {
+      const w = container.clientWidth, h = container.clientHeight
+      // Only trigger a re-render when the size actually changed meaningfully
+      if (Math.abs(w - prevW) < 4 && Math.abs(h - prevH) < 4) return
+      prevW = w; prevH = h
+      // Clear saved transform so resize triggers a fresh auto-fit
+      currentTransformRef.current = null
+      renderGraph()
+    })
     observer.observe(container)
     return () => observer.disconnect()
   }, [renderGraph])
@@ -844,11 +888,34 @@ export function D3GraphView() {
   }, [])
 
   const resetView = useCallback(() => {
-    if (!svgRef.current || !zoomRef.current || !containerRef.current) return
+    if (!svgRef.current || !zoomRef.current) return
     const svg = d3.select(svgRef.current)
+    // Collect all visible node positions and refit to them
+    const positions: { x: number; y: number }[] = []
+    svg.selectAll<SVGGElement, { x?: number; y?: number }>(".graph-node").each(function () {
+      const transform = (this as SVGGElement).getAttribute("transform") ?? ""
+      const m = /translate\(([^,]+),([^)]+)\)/.exec(transform)
+      if (m) positions.push({ x: parseFloat(m[1]), y: parseFloat(m[2]) })
+    })
+    if (!positions.length || !containerRef.current) return
     const { width, height } = containerRef.current.getBoundingClientRect()
-    const t = d3.zoomIdentity.translate(width / 2, height / 2).scale(0.85)
-    svg.transition().duration(500).call(zoomRef.current.transform, t)
+    const xs = positions.map((p) => p.x)
+    const ys = positions.map((p) => p.y)
+    const minX = Math.min(...xs), maxX = Math.max(...xs)
+    const minY = Math.min(...ys), maxY = Math.max(...ys)
+    const pad = 80
+    const scale = Math.min(
+      width / (maxX - minX + pad * 2),
+      height / (maxY - minY + pad * 2),
+      1.5,
+    )
+    const tx = width / 2 - ((minX + maxX) / 2) * scale
+    const ty = height / 2 - ((minY + maxY) / 2) * scale
+    svg
+      .transition()
+      .duration(500)
+      .ease(d3.easeCubicOut)
+      .call(zoomRef.current.transform, d3.zoomIdentity.translate(tx, ty).scale(scale))
   }, [])
 
   /* ---- Render ---- */
@@ -916,7 +983,6 @@ export function D3GraphView() {
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
-        style={{ backgroundColor: "var(--bg-app)" }}
         onMouseMove={(e) => {
           const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
           setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top })

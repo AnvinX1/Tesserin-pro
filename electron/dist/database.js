@@ -234,7 +234,7 @@ function getNoteByTitle(title) {
     return db.prepare('SELECT * FROM notes WHERE title = ? COLLATE NOCASE').get(title);
 }
 function createNote(data) {
-    const id = (0, crypto_1.randomUUID)();
+    const id = data.id || (0, crypto_1.randomUUID)();
     const title = data.title || 'Untitled';
     const content = data.content || '';
     db.prepare('INSERT INTO notes (id, title, content, folder_id) VALUES (?, ?, ?, ?)').run(id, title, content, data.folderId || null);

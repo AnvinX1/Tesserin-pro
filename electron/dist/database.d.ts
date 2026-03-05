@@ -15,6 +15,7 @@ export declare function listNotes(): unknown[];
 export declare function getNote(id: string): unknown;
 export declare function getNoteByTitle(title: string): unknown;
 export declare function createNote(data: {
+    id?: string;
     title?: string;
     content?: string;
     folderId?: string;

@@ -75,14 +75,14 @@ async function loadCanvases(): Promise<void> {
   }
 }
 
-/** Create a new canvas and set it as active. Returns the new canvas ID. */
-async function createCanvas(name: string): Promise<string> {
+/** Create a new canvas and (optionally) set it as active. Returns the new canvas ID. */
+async function createCanvas(name: string, autoSelect = true): Promise<string> {
   const id = crypto.randomUUID()
   const canvas = await storage.createCanvas({ id, name })
   const info = toInfo(canvas)
   setState({
     canvases: [info, ...state.canvases],
-    activeCanvasId: id,
+    ...(autoSelect ? { activeCanvasId: id } : {}),
   })
   return id
 }
@@ -111,7 +111,7 @@ async function renameCanvas(id: string, name: string): Promise<void> {
 }
 
 /** Duplicate a canvas under a new name. */
-async function duplicateCanvas(id: string): Promise<string> {
+async function duplicateCanvas(id: string, autoSelect = true): Promise<string> {
   const original = await storage.getCanvas(id)
   if (!original) throw new Error("Canvas not found")
   const newId = crypto.randomUUID()
@@ -126,7 +126,7 @@ async function duplicateCanvas(id: string): Promise<string> {
   const info = toInfo(canvas)
   setState({
     canvases: [info, ...state.canvases],
-    activeCanvasId: newId,
+    ...(autoSelect ? { activeCanvasId: newId } : {}),
   })
   return newId
 }

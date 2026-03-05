@@ -270,21 +270,51 @@ function NotePickerPanel({
 
 /* ── component ───────────────────────────────────────────── */
 
-export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {}) {
+export function CreativeCanvas({ onSplitOpen, paneId = "primary" }: { onSplitOpen?: () => void; paneId?: string } = {}) {
   const { isDark } = useTesserinTheme()
   const { notes } = useNotes()
   const {
     canvases,
-    activeCanvasId,
+    activeCanvasId: globalActiveCanvasId,
     isLoading: canvasListLoading,
     loadCanvases,
     createCanvas,
     deleteCanvas,
     renameCanvas,
     duplicateCanvas,
-    setActiveCanvas,
+    setActiveCanvas: globalSetActiveCanvas,
     touchCanvas,
   } = useCanvasStore()
+
+  // ── Per-pane canvas selection isolation ────────────────────────────────────
+  // Both panes share the global store, but writing activeCanvasId there makes
+  // the other pane jump to the same canvas. The secondary pane keeps its own
+  // local selection so the two panes are fully independent.
+  // The selection is persisted to localStorage so split-pane restores the
+  // correct canvas on reload instead of always resetting to canvases[0].
+  const isSecondaryPane = paneId !== "primary"
+  const splitPaneKey = `tesserin:canvas:split-pane:${paneId}`
+
+  const [localCanvasId, setLocalCanvasId] = useState<string | null>(() => {
+    if (!isSecondaryPane) return null
+    try { return localStorage.getItem(splitPaneKey) } catch { return null }
+  })
+
+  // Shadow the global names — all existing code in this component uses these
+  // and automatically gets per-pane isolation for free.
+  const activeCanvasId = isSecondaryPane ? localCanvasId : globalActiveCanvasId
+  const setActiveCanvas = useCallback((id: string | null) => {
+    if (isSecondaryPane) {
+      setLocalCanvasId(id)
+      try {
+        if (id) localStorage.setItem(splitPaneKey, id)
+        else localStorage.removeItem(splitPaneKey)
+      } catch {}
+    } else {
+      globalSetActiveCanvas(id)
+    }
+  }, [isSecondaryPane, globalSetActiveCanvas, splitPaneKey])
+
   const apiRef = useRef<any>(null)
   const canvasIdRef = useRef<string | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -329,12 +359,18 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
     loadCanvases()
   }, [])
 
-  // Auto-select the most recently used canvas when the list loads and no canvas is active
+  // Auto-select a canvas when the list loads and no valid canvas is active.
+  // For the secondary pane this also validates the persisted selection against
+  // the current canvas list (the canvas may have been deleted between sessions).
   useEffect(() => {
-    if (!activeCanvasId && canvases.length > 0 && !canvasListLoading) {
+    if (canvasListLoading || canvases.length === 0) return
+    if (
+      !activeCanvasId ||
+      (isSecondaryPane && !canvases.some((c) => c.id === activeCanvasId))
+    ) {
       setActiveCanvas(canvases[0].id)
     }
-  }, [canvases, activeCanvasId, canvasListLoading, setActiveCanvas])
+  }, [canvases, activeCanvasId, canvasListLoading, setActiveCanvas, isSecondaryPane])
 
   // Listen for canvas:updated events from MCP/IPC
   useEffect(() => {
@@ -354,12 +390,16 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
         })
       }
     }
+    // onCanvasUpdated wraps our callback in an IPC-event handler and returns
+    // the wrapped reference — we must capture it so offCanvasUpdated can
+    // remove the correct listener (passing the original callback won't work).
+    let registeredHandler: ((...args: any[]) => void) | undefined
     if (typeof window !== "undefined" && window.tesserin?.onCanvasUpdated) {
-      window.tesserin.onCanvasUpdated(handler)
+      registeredHandler = window.tesserin.onCanvasUpdated(handler)
     }
     return () => {
-      if (typeof window !== "undefined" && window.tesserin?.offCanvasUpdated) {
-        window.tesserin.offCanvasUpdated(handler)
+      if (registeredHandler && typeof window !== "undefined" && window.tesserin?.offCanvasUpdated) {
+        window.tesserin.offCanvasUpdated(registeredHandler)
       }
     }
   }, [])
@@ -397,6 +437,15 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
       await deleteCanvas(id)
     },
     [deleteCanvas],
+  )
+
+  /** Duplicate a canvas; for the secondary pane, select locally not globally. */
+  const handleDuplicateCanvas = useCallback(
+    async (id: string) => {
+      const newId = await duplicateCanvas(id, !isSecondaryPane)
+      if (isSecondaryPane) setLocalCanvasId(newId)
+    },
+    [duplicateCanvas, isSecondaryPane],
   )
 
   /** Insert a note as a card onto the canvas */
@@ -454,15 +503,35 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
       let files: any | undefined
 
       try {
-        // Try storage API first (SQLite via IPC or localStorage fallback)
+        // Try storage API first (SQLite via IPC)
         let canvas = await storage.getCanvas(activeCanvasId!)
 
-        // Also check raw localStorage as a secondary source
+        // Always check localStorage — saveNow() writes here synchronously before
+        // the async IPC call completes, so on a reload localStorage may hold
+        // drawings that never made it to SQLite.
+        let lsCanvas: any = null
+        try {
+          const lsRaw = localStorage.getItem(`tesserin:canvas:${activeCanvasId}`)
+          if (lsRaw) lsCanvas = JSON.parse(lsRaw)
+        } catch {}
+
         if (!canvas) {
-          try {
-            const lsRaw = localStorage.getItem(`tesserin:canvas:${activeCanvasId}`)
-            if (lsRaw) canvas = JSON.parse(lsRaw)
-          } catch { }
+          // No SQLite record yet — fall back to localStorage entirely
+          canvas = lsCanvas
+        } else if (
+          lsCanvas?.updated_at &&
+          canvas?.updated_at &&
+          new Date(lsCanvas.updated_at) > new Date(canvas.updated_at)
+        ) {
+          // localStorage is newer (async IPC didn't land before reload)
+          canvas = lsCanvas
+          // Opportunistically sync the newer data back to SQLite
+          storage
+            .updateCanvas(activeCanvasId!, {
+              elements: lsCanvas.elements,
+              appState: lsCanvas.app_state,
+            })
+            .catch(() => {})
         }
 
         if (canvas?.id) {
@@ -651,7 +720,8 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
 
   const onAPI = useCallback((api: any) => {
     apiRef.current = api
-    setExcalidrawAPI(api) // Share with canvas export dialog
+    // Only the primary pane owns the global export API reference
+    if (paneId === "primary") setExcalidrawAPI(api)
     // If canvas data finished loading before Excalidraw was ready, apply it now
     if (pendingSceneRef.current) {
       api.updateScene(pendingSceneRef.current)
@@ -1019,7 +1089,7 @@ export function CreativeCanvas({ onSplitOpen }: { onSplitOpen?: () => void } = {
         onCreate={handleCreateCanvas}
         onClose={handleCloseCanvas}
         onRename={renameCanvas}
-        onDuplicate={duplicateCanvas}
+        onDuplicate={handleDuplicateCanvas}
         onDelete={deleteCanvas}
       />
 

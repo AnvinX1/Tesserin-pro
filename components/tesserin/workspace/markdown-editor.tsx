@@ -1,10 +1,13 @@
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
+<<<<<<< HEAD
 import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiClock, FiColumns } from "react-icons/fi"
+=======
+import { FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiMenu } from "react-icons/fi"
+>>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
 import { renderMarkdown } from "@/lib/markdown-renderer"
-import { SkeuoBadge } from "../core/skeuo-badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,26 +46,13 @@ interface MarkdownEditorProps {
   onSelectNote?: (id: string) => void
   /** Whether this editor is in a secondary pane */
   isSecondary?: boolean
+  /** Whether the notes sidebar is currently visible (primary pane only) */
+  showSidebar?: boolean
+  /** Callback to toggle the notes sidebar (primary pane only) */
+  onToggleSidebar?: () => void
 }
 
-/**
- * MarkdownEditor
- *
- * A premium markdown editor with full wiki-link support.
- * Supports independent note selection for universal split panes.
- *
- * - **Edit mode**: Raw markdown textarea
- * - **Preview mode**: Rendered markdown with interactive wiki-links
- * - **Split mode**: Side-by-side edit + preview
- * - **Note switcher**: Dropdown to switch between notes
- * - **Note management**: Create, delete, rename notes
- * - **Backlink count**: Shows number of incoming links
- * - **Word count**: Live word, character, and reading time display
- *
- * Wiki-links (`[[Note Title]]`) are rendered as clickable accent-colored
- * links. Clicking navigates to (or creates) the target note.
- */
-export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary }: MarkdownEditorProps = {}) {
+export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary, showSidebar, onToggleSidebar }: MarkdownEditorProps = {}) {
   const {
     notes,
     selectedNoteId,
@@ -74,9 +64,41 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
     graph,
   } = useNotes()
 
-  // Use prop noteId if explicitly provided (secondary pane), otherwise global
-  const effectiveNoteId = propsNoteId !== undefined ? propsNoteId : selectedNoteId
-  const effectiveSelectNote = onSelectNote || selectNote
+  // Secondary pane tracks its own selected note locally so it never
+  // touches the global selectedNoteId used by the primary pane.
+  const [secondaryNoteId, setSecondaryNoteId] = useState<string | null>(propsNoteId ?? null)
+  // Sync when the parent explicitly changes the prop (e.g. opening a link in split)
+  useEffect(() => {
+    if (isSecondary && propsNoteId !== undefined) setSecondaryNoteId(propsNoteId)
+  }, [isSecondary, propsNoteId])
+
+  const effectiveNoteId = isSecondary
+    ? (secondaryNoteId ?? propsNoteId ?? null)
+    : (propsNoteId !== undefined ? propsNoteId : selectedNoteId)
+
+  // For the secondary pane, note selection stays local;
+  // for the primary pane, fall back to global selectNote.
+  const effectiveSelectNote = useCallback((id: string) => {
+    if (isSecondary) {
+      setSecondaryNoteId(id)
+      onSelectNote?.(id)
+    } else {
+      (onSelectNote || selectNote)(id)
+    }
+  }, [isSecondary, onSelectNote, selectNote])
+
+  // Intercept addNote for secondary pane: create the note but select it
+  // only within this pane — pass autoSelect=false so the global selectedNoteId
+  // (which drives the primary pane) is never touched.
+  const handleAddNote = useCallback(() => {
+    if (isSecondary) {
+      const id = addNote(undefined, undefined, undefined, false)
+      // effectiveSelectNote updates both local state AND parent splitState.secondaryNoteId
+      effectiveSelectNote(id)
+    } else {
+      addNote() // default autoSelect=true, handled inside the store
+    }
+  }, [addNote, isSecondary, effectiveSelectNote])
 
   const [viewMode, setViewMode] = useState<"edit" | "preview" | "split">("split")
   const [showNoteList, setShowNoteList] = useState(false)
@@ -153,21 +175,85 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
 
   /* ---- Empty state ---- */
   if (!selectedNote) {
+    // Secondary pane: show a note list so the user can pick or create.
+    if (isSecondary) {
+      return (
+        <div className="flex flex-col h-full">
+          <div
+            className="h-10 border-b flex items-center px-3 justify-between shrink-0"
+            style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
+          >
+            <div className="flex items-center gap-2">
+              <FiFileText size={13} style={{ color: "var(--text-tertiary)" }} />
+              <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: "var(--text-tertiary)" }}>
+                Notes
+              </span>
+            </div>
+            <button
+              onClick={handleAddNote}
+              className="skeuo-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+            >
+              <FiPlus size={12} />
+              New
+            </button>
+          </div>
+          {notes.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <button
+                onClick={handleAddNote}
+                className="skeuo-btn px-4 py-2.5 rounded-xl text-sm font-semibold"
+              >
+                <FiPlus size={13} className="inline mr-1.5" />
+                Create Note
+              </button>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+              {notes.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => effectiveSelectNote(n.id)}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors duration-150"
+                  style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-panel-inset)" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
+                >
+                  <FiFileText size={13} className="shrink-0" style={{ color: "var(--text-tertiary)" }} />
+                  <span className="truncate">{n.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Primary pane: centered empty state
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
         <div
-          className="h-12 border-b flex items-center pl-20 pr-6 justify-between shrink-0"
+          className="h-12 border-b flex items-center pl-3 pr-6 justify-between shrink-0"
           style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
         >
           <div className="flex items-center gap-2">
+            {onToggleSidebar && (
+              <button
+                onClick={onToggleSidebar}
+                className="skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg"
+                aria-label={showSidebar ? "Hide notes sidebar" : "Show notes sidebar"}
+                title={showSidebar ? "Hide sidebar" : "Show sidebar"}
+              >
+                <FiMenu size={13} style={{ color: showSidebar ? "var(--accent-primary)" : "var(--text-tertiary)" }} />
+              </button>
+            )}
             <FiFileText size={14} style={{ color: "var(--text-tertiary)" }} />
             <span className="text-[11px] font-medium" style={{ color: "var(--text-tertiary)" }}>
               No note selected
             </span>
           </div>
           <button
-            onClick={() => addNote()}
+            onClick={handleAddNote}
             className="skeuo-btn px-3 py-1 text-[11px] flex items-center gap-1.5 rounded-lg"
           >
             <FiPlus size={12} /> New Note
@@ -198,16 +284,28 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
   /* ---- Active state ---- */
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
+      {/* Toolbar */}
       <div
-        className="h-12 border-b flex items-center pl-20 pr-6 justify-between shrink-0 relative z-40"
+        className="h-12 border-b flex items-center pl-3 pr-4 gap-2 shrink-0 justify-between relative z-40"
         style={{ borderColor: "var(--border-dark)", background: "var(--bg-panel)" }}
       >
+        {/* Sidebar toggle — primary pane only */}
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
+            aria-label={showSidebar ? "Hide notes sidebar" : "Show notes sidebar"}
+            title={showSidebar ? "Hide sidebar" : "Show sidebar"}
+          >
+            <FiMenu size={13} style={{ color: showSidebar ? "var(--accent-primary)" : "var(--text-tertiary)" }} />
+          </button>
+        )}
+
         {/* Left: Note switcher */}
         <div className="flex items-center gap-3 relative" ref={dropdownRef}>
           <button
             onClick={() => setShowNoteList(!showNoteList)}
-            className="flex items-center gap-2 px-2 py-1 rounded-lg transition-colors hover:bg-white/5"
+            className="flex items-center gap-2 px-2  rounded-lg transition-colors hover:bg-white/5"
           >
             <FiFileText size={14} style={{ color: "var(--accent-primary)" }} />
             <span className="text-[11px] font-semibold tracking-wide truncate max-w-[160px]" style={{ color: "var(--text-primary)" }}>
@@ -255,7 +353,7 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
           )}
         </div>
 
-        {/* Center: View mode */}
+        {/* Center: View mode pill */}
         <div className="flex items-center gap-1 skeuo-inset p-0.5 rounded-lg">
           {([
             { id: "edit" as const, icon: FiEdit2 },
@@ -263,12 +361,19 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
             { id: "preview" as const, icon: FiEye },
           ]).map((mode) => (
             <button
+<<<<<<< HEAD
               key={mode.id}
               onClick={() => setViewMode(mode.id)}
               className={`p-1.5 rounded-md transition-all duration-200 ${
                 viewMode === mode.id
                   ? "shadow-sm"
                   : "opacity-40 hover:opacity-70"
+=======
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-widest transition-all duration-200 ${
+                viewMode === mode ? "shadow-sm scale-[1.02]" : "opacity-40 hover:opacity-70"
+>>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
               }`}
               style={{
                 background: viewMode === mode.id ? "var(--accent-primary)" : "transparent",
@@ -281,7 +386,7 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
           ))}
         </div>
 
-        {/* Right: Info + Actions */}
+        {/* Right: Stats + Actions */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end leading-none gap-1">
@@ -305,10 +410,9 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
 
           <div className="w-px h-6 opacity-20" style={{ background: "var(--text-tertiary)" }} />
 
-          {/* Actions */}
-          <div className="flex items-center gap-0.5 ml-1">
+          <div className="flex items-center gap-0.5">
             <button
-              onClick={() => addNote()}
+              onClick={handleAddNote}
               className="skeuo-btn w-7 h-7 flex items-center justify-center rounded-lg"
               aria-label="New note"
             >
@@ -323,6 +427,34 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary 
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Title editor */}
+      <div className="px-8 pt-6 pb-3" style={{ background: "var(--bg-panel)" }}>
+        <input
+          value={selectedNote.title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          className="w-full text-3xl font-bold bg-transparent border-none focus:outline-none tracking-tight"
+          style={{ color: "var(--text-primary)", lineHeight: "1.2" }}
+          placeholder="Untitled"
+          aria-label="Note title"
+        />
+        {selectedNote.tags && selectedNote.tags.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {selectedNote.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-[10px] px-2 py-0.5 rounded-md font-medium"
+                style={{
+                  color: tag.color || "var(--accent-primary)",
+                  backgroundColor: tag.color ? `${tag.color}10` : "rgba(250, 204, 21, 0.06)",
+                }}
+              >
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Editor Body */}
