@@ -253,3 +253,14 @@ export function ScribbledCollapse({ size = 20, className, style }: IconProps) {
     </svg>
   )
 }
+
+/** Terminal — scribbled console/terminal icon */
+export function ScribbledTerminal({ size = 20, className, style }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      <path d="M7 9 L11 12 L7 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="15" x2="17" y2="15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}

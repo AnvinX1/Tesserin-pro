@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as os from 'os'
 import { execFile } from 'child_process'
 import { randomUUID } from 'crypto'
+import * as pty from 'node-pty'
 
 /* ================================================================== */
 /*  Input validation helpers                                           */
@@ -587,6 +588,65 @@ export function registerIpcHandlers(): void {
             incomingLinks: node?.incomingLinks || [],
             linkCount: node?.linkCount || 0,
             edges: relatedEdges
+        }
+    })
+
+    // ── Terminal (PTY) ──────────────────────────────────────────────────
+    const ptyProcesses = new Map<string, pty.IPty>()
+
+    ipcMain.handle('terminal:spawn', (_e, id: string, cwd?: string) => {
+        const shell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/bash'
+        const workingDir = cwd || os.homedir()
+        
+        try {
+            const ptyProcess = pty.spawn(shell, [], {
+                name: 'xterm-256color',
+                cols: 80,
+                rows: 24,
+                cwd: workingDir,
+                env: safeEnv() as { [key: string]: string },
+            })
+            ptyProcesses.set(id, ptyProcess)
+            return { success: true, pid: ptyProcess.pid }
+        } catch (err) {
+            return { success: false, error: String(err) }
+        }
+    })
+
+    ipcMain.handle('terminal:write', (_e, id: string, data: string) => {
+        const ptyProcess = ptyProcesses.get(id)
+        if (ptyProcess) {
+            ptyProcess.write(data)
+            return true
+        }
+        return false
+    })
+
+    ipcMain.handle('terminal:resize', (_e, id: string, cols: number, rows: number) => {
+        const ptyProcess = ptyProcesses.get(id)
+        if (ptyProcess) {
+            ptyProcess.resize(cols, rows)
+            return true
+        }
+        return false
+    })
+
+    ipcMain.handle('terminal:kill', (_e, id: string) => {
+        const ptyProcess = ptyProcesses.get(id)
+        if (ptyProcess) {
+            ptyProcess.kill()
+            ptyProcesses.delete(id)
+            return true
+        }
+        return false
+    })
+
+    ipcMain.on('terminal:data', (event, id: string) => {
+        const ptyProcess = ptyProcesses.get(id)
+        if (ptyProcess) {
+            ptyProcess.onData((data: string) => {
+                event.sender.send('terminal:data', id, data)
+            })
         }
     })
 }

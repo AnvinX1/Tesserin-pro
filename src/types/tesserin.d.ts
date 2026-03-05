@@ -333,6 +333,17 @@ interface TesserinKnowledgeBase {
     }>
 }
 
+/* ── Terminal (PTY) ─────────────────────────────────────────────────── */
+
+interface TesserinTerminal {
+    spawn(id: string, cwd?: string): Promise<{ success: boolean; pid?: number; error?: string }>
+    write(id: string, data: string): Promise<boolean>
+    resize(id: string, cols: number, rows: number): Promise<boolean>
+    kill(id: string): Promise<boolean>
+    onData(id: string, callback: (data: string) => void): (...args: any[]) => void
+    offData(handler: (...args: any[]) => void): void
+}
+
 interface TesserinAPI {
     db: TesserinDB
     ai: TesserinAI
@@ -345,6 +356,7 @@ interface TesserinAPI {
     ppt?: TesserinPPT
     agents?: TesserinCloudAgents
     kb?: TesserinKnowledgeBase
+    terminal?: TesserinTerminal
     onCanvasUpdated?: (callback: (canvasId: string) => void) => any
     offCanvasUpdated?: (handler: (...args: any[]) => void) => void
 }

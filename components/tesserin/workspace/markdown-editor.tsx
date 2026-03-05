@@ -1,11 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
-<<<<<<< HEAD
-import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiClock, FiColumns } from "react-icons/fi"
-=======
-import { FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiMenu } from "react-icons/fi"
->>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
+import { FiEye, FiEdit2, FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiClock, FiColumns, FiMenu } from "react-icons/fi"
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
 import { renderMarkdown } from "@/lib/markdown-renderer"
 import {
@@ -361,19 +357,12 @@ export function MarkdownEditor({ noteId: propsNoteId, onSelectNote, isSecondary,
             { id: "preview" as const, icon: FiEye },
           ]).map((mode) => (
             <button
-<<<<<<< HEAD
               key={mode.id}
               onClick={() => setViewMode(mode.id)}
               className={`p-1.5 rounded-md transition-all duration-200 ${
                 viewMode === mode.id
                   ? "shadow-sm"
                   : "opacity-40 hover:opacity-70"
-=======
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-widest transition-all duration-200 ${
-                viewMode === mode ? "shadow-sm scale-[1.02]" : "opacity-40 hover:opacity-70"
->>>>>>> e463dd80110a8bf4f59193dd71ed92f51112d971
               }`}
               style={{
                 background: viewMode === mode.id ? "var(--accent-primary)" : "transparent",

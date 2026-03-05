@@ -13,6 +13,7 @@ import {
   ScribbledSettings,
   ScribbledExpand,
   ScribbledCollapse,
+  ScribbledTerminal,
 } from "../core/scribbled-icons"
 import {
   Tooltip,
@@ -35,6 +36,7 @@ const TAB_ANIM: Record<string, "bounce" | "wobble" | "pulse" | "morph"> = {
   notes: "bounce",
   canvas: "wobble",
   graph: "pulse",
+  terminal: "pulse",
   settings: "wobble",
 }
 
@@ -42,6 +44,7 @@ const CORE_TABS = [
   { id: "notes", icon: ScribbledNotes, label: "Notes" },
   { id: "canvas", icon: ScribbledCanvas, label: "Canvas" },
   { id: "graph", icon: ScribbledGraph, label: "Graph" },
+  { id: "terminal", icon: ScribbledTerminal, label: "Terminal" },
   { id: "settings", icon: ScribbledSettings, label: "Settings" },
 ] as const
 

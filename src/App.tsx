@@ -23,9 +23,10 @@ import { MarkdownEditor } from "@/components/tesserin/workspace/markdown-editor"
 import { CreativeCanvas } from "@/components/tesserin/workspace/creative-canvas"
 import { CanvasSidebar } from "@/components/tesserin/workspace/canvas-sidebar"
 import { D3GraphView } from "@/components/tesserin/workspace/d3-graph-view"
+import { TerminalView } from "@/components/tesserin/workspace/terminal-view"
 import { SplitPaneLayout, useSplitPanes, type ViewDefinition, type PaneRenderProps } from "@/components/tesserin/workspace/split-panes"
 import { SettingsPanel } from "@/components/tesserin/panels/settings-panel"
-import { FiFileText, FiCompass, FiSettings } from "react-icons/fi"
+import { FiFileText, FiCompass, FiSettings, FiTerminal } from "react-icons/fi"
 import { HiOutlineCpuChip } from "react-icons/hi2"
 
 // Lazy import for quick capture overlay (not a core tab, just an overlay)
@@ -99,7 +100,7 @@ function AppContent() {
         // Initial sync from localStorage (fastest)
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem("tesserin:active-tab")
-            if (saved === "notes" || saved === "canvas" || saved === "graph" || saved === "settings") {
+            if (saved === "notes" || saved === "canvas" || saved === "graph" || saved === "terminal" || saved === "settings") {
                 return saved as TabId
             }
         }
@@ -116,7 +117,7 @@ function AppContent() {
         async function loadStartupTab() {
             const startup = await getSetting("general.startupTab")
             if (startup && startup !== "last-active") {
-                if (startup === "notes" || startup === "canvas" || startup === "graph" || startup === "settings") {
+                if (startup === "notes" || startup === "canvas" || startup === "graph" || startup === "terminal" || startup === "settings") {
                     setActiveTab(startup as TabId)
                 }
             }
@@ -189,6 +190,7 @@ function AppContent() {
             { id: "notes", label: "Notes", icon: FiFileText },
             { id: "canvas", label: "Canvas", icon: FiCompass },
             { id: "graph", label: "Graph", icon: HiOutlineCpuChip },
+            { id: "terminal", label: "Terminal", icon: FiTerminal },
             { id: "settings", label: "Settings", icon: FiSettings },
         ]
         for (const p of panels.filter((pl) => pl.location === "workspace")) {
@@ -222,6 +224,8 @@ function AppContent() {
                 />
             case "graph":
                 return <D3GraphView key={key} onNavigate={handleSetActiveTab} />
+            case "terminal":
+                return <TerminalView key={key} paneId={props.paneId} />
             case "settings":
                 return <SettingsPanel key={key} />
             default: {

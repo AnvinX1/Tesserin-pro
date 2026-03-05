@@ -227,6 +227,18 @@ declare const tesserinAPI: {
         onStatus: (callback: (status: unknown) => void) => (_e: Electron.IpcRendererEvent, status: unknown) => void;
         offStatus: (handler: (...args: any[]) => void) => void;
     };
+    terminal: {
+        spawn: (id: string, cwd?: string) => Promise<{
+            success: boolean;
+            pid?: number;
+            error?: string;
+        }>;
+        write: (id: string, data: string) => Promise<boolean>;
+        resize: (id: string, cols: number, rows: number) => Promise<boolean>;
+        kill: (id: string) => Promise<boolean>;
+        onData: (id: string, callback: (data: string) => void) => (_e: Electron.IpcRendererEvent, termId: string, data: string) => void;
+        offData: (handler: (...args: any[]) => void) => void;
+    };
 };
 export type TesserinAPI = typeof tesserinAPI;
 export {};

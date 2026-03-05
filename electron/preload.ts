@@ -270,6 +270,25 @@ const tesserinAPI = {
             ipcRenderer.removeListener('updater:status', handler)
         },
     },
+
+    // ── Terminal (PTY) ──────────────────────────────────────────────────
+    terminal: {
+        spawn: (id: string, cwd?: string) => ipcRenderer.invoke('terminal:spawn', id, cwd) as Promise<{ success: boolean; pid?: number; error?: string }>,
+        write: (id: string, data: string) => ipcRenderer.invoke('terminal:write', id, data) as Promise<boolean>,
+        resize: (id: string, cols: number, rows: number) => ipcRenderer.invoke('terminal:resize', id, cols, rows) as Promise<boolean>,
+        kill: (id: string) => ipcRenderer.invoke('terminal:kill', id) as Promise<boolean>,
+        onData: (id: string, callback: (data: string) => void) => {
+            ipcRenderer.send('terminal:data', id)
+            const handler = (_e: Electron.IpcRendererEvent, termId: string, data: string) => {
+                if (termId === id) callback(data)
+            }
+            ipcRenderer.on('terminal:data', handler)
+            return handler
+        },
+        offData: (handler: (...args: any[]) => void) => {
+            ipcRenderer.removeListener('terminal:data', handler)
+        },
+    },
 }
 
 contextBridge.exposeInMainWorld('tesserin', tesserinAPI)

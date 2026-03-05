@@ -46,6 +46,7 @@ const path = __importStar(require("path"));
 const os = __importStar(require("os"));
 const child_process_1 = require("child_process");
 const crypto_1 = require("crypto");
+const pty = __importStar(require("node-pty"));
 /* ================================================================== */
 /*  Input validation helpers                                           */
 /* ================================================================== */
@@ -207,7 +208,13 @@ function registerIpcHandlers() {
     electron_1.ipcMain.handle('db:templates:delete', (_e, id) => db.deleteTemplate(validateId(id, 'id')));
     // ── Settings ──────────────────────────────────────────────────────
     electron_1.ipcMain.handle('db:settings:get', (_e, key) => db.getSetting(requireString(key, 'key')));
-    electron_1.ipcMain.handle('db:settings:set', (_e, key, value) => db.setSetting(requireString(key, 'key'), requireString(value, 'value')));
+    electron_1.ipcMain.handle('db:settings:set', (_e, key, value) => {
+        // key must be non-empty; value may be an empty string (e.g. clearing an API key)
+        const k = requireString(key, 'key');
+        if (typeof value !== 'string')
+            throw new Error(`Invalid parameter "value": expected string`);
+        return db.setSetting(k, value);
+    });
     electron_1.ipcMain.handle('db:settings:getAll', () => db.getAllSettings());
     electron_1.ipcMain.handle('db:clear', () => db.clearAllData());
     // ── Canvases ──────────────────────────────────────────────────────
@@ -571,6 +578,59 @@ function registerIpcHandlers() {
             linkCount: node?.linkCount || 0,
             edges: relatedEdges
         };
+    });
+    // ── Terminal (PTY) ──────────────────────────────────────────────────
+    const ptyProcesses = new Map();
+    electron_1.ipcMain.handle('terminal:spawn', (_e, id, cwd) => {
+        const shell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/bash';
+        const workingDir = cwd || os.homedir();
+        try {
+            const ptyProcess = pty.spawn(shell, [], {
+                name: 'xterm-256color',
+                cols: 80,
+                rows: 24,
+                cwd: workingDir,
+                env: safeEnv(),
+            });
+            ptyProcesses.set(id, ptyProcess);
+            return { success: true, pid: ptyProcess.pid };
+        }
+        catch (err) {
+            return { success: false, error: String(err) };
+        }
+    });
+    electron_1.ipcMain.handle('terminal:write', (_e, id, data) => {
+        const ptyProcess = ptyProcesses.get(id);
+        if (ptyProcess) {
+            ptyProcess.write(data);
+            return true;
+        }
+        return false;
+    });
+    electron_1.ipcMain.handle('terminal:resize', (_e, id, cols, rows) => {
+        const ptyProcess = ptyProcesses.get(id);
+        if (ptyProcess) {
+            ptyProcess.resize(cols, rows);
+            return true;
+        }
+        return false;
+    });
+    electron_1.ipcMain.handle('terminal:kill', (_e, id) => {
+        const ptyProcess = ptyProcesses.get(id);
+        if (ptyProcess) {
+            ptyProcess.kill();
+            ptyProcesses.delete(id);
+            return true;
+        }
+        return false;
+    });
+    electron_1.ipcMain.on('terminal:data', (event, id) => {
+        const ptyProcess = ptyProcesses.get(id);
+        if (ptyProcess) {
+            ptyProcess.onData((data) => {
+                event.sender.send('terminal:data', id, data);
+            });
+        }
     });
 }
 //# sourceMappingURL=ipc-handlers.js.map
