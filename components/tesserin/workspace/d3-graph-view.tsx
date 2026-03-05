@@ -2,16 +2,10 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react"
 import * as d3 from "d3"
-import {
-  FiZoomIn,
-  FiZoomOut,
-  FiMaximize,
-  FiActivity,
-  FiGitBranch,
-  FiTarget,
-} from "react-icons/fi"
+import { FiZoomIn, FiZoomOut, FiMaximize, FiActivity, FiGitBranch, FiTarget, FiPlus } from "react-icons/fi"
 import { useNotes, type GraphNode, type GraphLink } from "@/lib/notes-store"
 import { TesserinLogo } from "../core/tesserin-logo"
+import { TesseradrawLogo } from "./tesseradraw-logo"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -1035,10 +1029,57 @@ export function D3GraphView() {
           className="w-full h-full"
           role="application"
           aria-label={`Knowledge graph — ${mode} layout with ${graph.nodes.length} notes`}
+          style={{ display: graph.nodes.length === 0 ? "none" : "block" }}
         />
 
+        {/* Empty State — matches Tesseradraw WelcomeScreen style */}
+        {graph.nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-700">
+              <TesseradrawLogo size={120} animated />
+              <h1
+                className="mt-6 mb-2"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "3rem",
+                  fontWeight: 400,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Create Your First Note
+              </h1>
+              <p
+                className="mb-8 max-w-sm"
+                style={{
+                  fontFamily: '"Excalifont", "Virgil", "Comic Shanns", cursive',
+                  fontSize: "1.1rem",
+                  opacity: 0.5,
+                  fontWeight: 400,
+                  color: "var(--text-primary)"
+                }}
+              >
+                Connect your ideas and watch your knowledge graph grow.
+              </p>
+
+              <button
+                onClick={() => selectNote(null)} // This usually opens the search or new note dialog in various systems, but let's assume we want a new note button.
+                // Wait, useNotes has addNote. 
+                className="skeuo-btn px-8 py-3 rounded-2xl flex items-center gap-3 text-sm font-bold transition-all hover:scale-105 active:scale-95"
+                style={{
+                  color: "var(--accent-primary)",
+                  boxShadow: "0 10px 30px rgba(250, 204, 21, 0.15)"
+                }}
+              >
+                <FiPlus size={18} />
+                New Note
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hover tooltip */}
-        {tooltip && (
+        {tooltip && graph.nodes.length > 0 && (
           <div
             className="absolute pointer-events-none z-20 max-w-[200px] rounded-xl p-3"
             style={{
@@ -1067,46 +1108,50 @@ export function D3GraphView() {
         )}
 
         {/* Zoom controls */}
-        <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-          <button
-            onClick={() => handleZoom(1.3)}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Zoom in"
-          >
-            <FiZoomIn size={18} />
-          </button>
-          <button
-            onClick={() => handleZoom(0.7)}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Zoom out"
-          >
-            <FiZoomOut size={18} />
-          </button>
-          <button
-            onClick={resetView}
-            className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Reset view"
-          >
-            <FiMaximize size={18} />
-          </button>
-        </div>
+        {graph.nodes.length > 0 && (
+          <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+            <button
+              onClick={() => handleZoom(1.3)}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Zoom in"
+            >
+              <FiZoomIn size={18} />
+            </button>
+            <button
+              onClick={() => handleZoom(0.7)}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Zoom out"
+            >
+              <FiZoomOut size={18} />
+            </button>
+            <button
+              onClick={resetView}
+              className="skeuo-btn w-10 h-10 flex items-center justify-center rounded-lg"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Reset view"
+            >
+              <FiMaximize size={18} />
+            </button>
+          </div>
+        )}
 
         {/* Active mode HUD — shifted for Split button */}
-        <div
-          className="absolute top-4 left-20 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
-          style={{
-            color: "var(--accent-primary)",
-            opacity: 0.6,
-            letterSpacing: "0.05em",
-          }}
-        >
-          <TesserinLogo size={16} animated={false} />
-          MODE: {mode.toUpperCase()} | PHYSICS:{" "}
-          {mode === "force" ? "ACTIVE" : "STATIC"}
-        </div>
+        {graph.nodes.length > 0 && (
+          <div
+            className="absolute top-4 left-20 skeuo-panel px-4 py-2 text-[10px] font-mono pointer-events-none select-none flex items-center gap-2"
+            style={{
+              color: "var(--accent-primary)",
+              opacity: 0.6,
+              letterSpacing: "0.05em",
+            }}
+          >
+            <TesserinLogo size={16} animated={false} />
+            MODE: {mode.toUpperCase()} | PHYSICS:{" "}
+            {mode === "force" ? "ACTIVE" : "STATIC"}
+          </div>
+        )}
       </div>
     </div>
   )
