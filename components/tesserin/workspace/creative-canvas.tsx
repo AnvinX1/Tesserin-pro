@@ -348,6 +348,25 @@ export function CreativeCanvas({ onSplitOpen, paneId = "primary" }: { onSplitOpe
     return () => document.removeEventListener("fullscreenchange", handler)
   }, [])
 
+  // When the canvas container becomes visible again (e.g. after switching back
+  // from another tab where it was hidden via display:none), Excalidraw's internal
+  // canvas dimensions may be stale. Dispatching a resize event triggers its
+  // ResizeObserver to recalculate, preventing a blank/mis-sized canvas.
+  useEffect(() => {
+    const el = canvasContainerRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          window.dispatchEvent(new Event("resize"))
+        }
+      },
+      { threshold: 0.01 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
       document.exitFullscreen()

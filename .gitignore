@@ -48,3 +48,5 @@ __v0_jsx-dev-runtime.ts
 *.log
 npm-debug.log*
 pnpm-debug.log*
+# SPECTER
+.specterrc

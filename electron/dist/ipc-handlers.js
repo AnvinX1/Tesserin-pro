@@ -420,7 +420,44 @@ function registerIpcHandlers() {
         const buffer = Buffer.from(base64Data, 'base64');
         await fs.promises.writeFile(safePath, buffer);
     });
-    // ── API Keys ─────────────────────────────────────────────────────
+    // ── Canvas PDF Export ─────────────────────────────────────
+    // Receives an HTML string (canvas PNG wrapped in a print-ready page),
+    // loads it in a hidden off-screen BrowserWindow, calls printToPDF,
+    // and writes the result to filePath. No user-visible window is shown.
+    electron_1.ipcMain.handle('canvas:printToPDF', async (_e, htmlContent, outputPath, opts) => {
+        const safePath = validatePath(outputPath, 'outputPath');
+        const win = electron_1.BrowserWindow.getFocusedWindow();
+        const pageWidth = opts?.pageWidth ?? 794.56;
+        const pageHeight = opts?.pageHeight ?? 1122.56;
+        // Strip script/event-handler content from HTML before loading in a hidden window
+        // to prevent execution of renderer-supplied scripts during PDF rendering.
+        const safeHtml = htmlContent
+            .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/\bon\w+\s*=/gi, 'data-blocked=');
+        const hidden = new electron_1.BrowserWindow({
+            show: false,
+            width: Math.round(pageWidth),
+            height: Math.round(pageHeight),
+            webPreferences: { offscreen: true, javascript: false },
+        });
+        try {
+            await hidden.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(safeHtml));
+            // Give fonts/images a tick to fully render
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const pdfData = await hidden.webContents.printToPDF({
+                printBackground: true,
+                pageSize: { width: pageWidth * 1000, height: pageHeight * 1000 }, // Electron uses microns
+                margins: { marginType: 'none' },
+            });
+            await fs.promises.writeFile(safePath, pdfData);
+            // Offer to reveal the saved file
+            if (win)
+                electron_1.shell.showItemInFolder(safePath);
+        }
+        finally {
+            hidden.destroy();
+        }
+    });
     electron_1.ipcMain.handle('api:keys:list', () => {
         const keys = db.listApiKeys();
         // Never send key_hash to renderer
@@ -647,7 +684,21 @@ function registerIpcHandlers() {
             return { success: true, pid: existing.pid, reconnected: true };
         }
         const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/bash';
-        const shell = shellPath || defaultShell;
+        // Validate shellPath: must be an absolute path pointing to a real, executable file
+        // to prevent arbitrary binary execution via renderer-supplied paths.
+        let shell = defaultShell;
+        if (shellPath) {
+            const resolved = path.resolve(shellPath);
+            if (!path.isAbsolute(resolved) || resolved.includes('\0')) {
+                console.warn(`[Terminal] Rejected invalid shellPath: ${shellPath}`);
+            }
+            else if (!fs.existsSync(resolved)) {
+                console.warn(`[Terminal] Rejected non-existent shellPath: ${resolved}`);
+            }
+            else {
+                shell = resolved;
+            }
+        }
         const workingDir = cwd || os.homedir();
         try {
             const ptyProcess = pty.spawn(shell, [], {

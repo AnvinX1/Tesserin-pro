@@ -346,6 +346,10 @@ interface TesserinTerminal {
     offData(handler: (...args: any[]) => void): void
 }
 
+interface TesserinCanvasAPI {
+    printToPDF(htmlContent: string, outputPath: string, opts?: { pageWidth?: number; pageHeight?: number }): Promise<void>
+}
+
 interface TesserinAPI {
     db: TesserinDB
     ai: TesserinAI
@@ -359,6 +363,7 @@ interface TesserinAPI {
     agents?: TesserinCloudAgents
     kb?: TesserinKnowledgeBase
     terminal?: TesserinTerminal
+    canvas?: TesserinCanvasAPI
     onCanvasUpdated?: (callback: (canvasId: string) => void) => any
     offCanvasUpdated?: (handler: (...args: any[]) => void) => void
 }

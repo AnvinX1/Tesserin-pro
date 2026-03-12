@@ -966,10 +966,15 @@ const routes: Route[] = [
 /* ================================================================== */
 
 function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
-  // CORS headers — allow any origin for localhost agent UIs
-  res.setHeader("Access-Control-Allow-Origin", "*")
+  // CORS headers — restrict to localhost origins to prevent DNS-rebinding attacks
+  const origin = req.headers.origin || ""
+  const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+  if (isLocalOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", origin)
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  res.setHeader("Vary", "Origin")
 
   if (req.method === "OPTIONS") {
     res.writeHead(204)

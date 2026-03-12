@@ -223,6 +223,19 @@ export function SplitPaneLayout({
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Keep-alive: track every primary view the user has visited so we can keep
+  // them mounted (with display:none) instead of unmounting. This prevents
+  // Excalidraw (canvas) and other heavy components from losing state on tab switch.
+  const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([primaryViewType]))
+  useEffect(() => {
+    setMountedViews((prev) => {
+      if (prev.has(primaryViewType)) return prev
+      const next = new Set(prev)
+      next.add(primaryViewType)
+      return next
+    })
+  }, [primaryViewType])
+
   const { isActive, direction } = splitState
   const isHorizontal = direction === "horizontal"
 
@@ -272,11 +285,19 @@ export function SplitPaneLayout({
     }
   }, [isDragging, isHorizontal])
 
-  /* ── Single pane — render directly, no wrappers ── */
+  /* ── Single pane — keep-alive: render all visited views, display only the active one ── */
   if (!isActive) {
     return (
-      <div className="w-full h-full">
-        {renderView(primaryViewType, { paneId: "primary" })}
+      <div className="w-full h-full relative">
+        {Array.from(mountedViews).map((viewType) => (
+          <div
+            key={`primary-${viewType}`}
+            className="w-full h-full"
+            style={{ display: viewType === primaryViewType ? undefined : "none" }}
+          >
+            {renderView(viewType, { paneId: "primary" })}
+          </div>
+        ))}
       </div>
     )
   }
@@ -323,8 +344,16 @@ export function SplitPaneLayout({
             </button>
           )}
         </div>
-        <div className="flex-1 min-h-0 overflow-hidden">
-          {renderView(primaryViewType, { paneId: "primary" })}
+        <div className="flex-1 min-h-0 overflow-hidden relative">
+          {Array.from(mountedViews).map((viewType) => (
+            <div
+              key={`split-primary-${viewType}`}
+              className="w-full h-full"
+              style={{ display: viewType === primaryViewType ? undefined : "none" }}
+            >
+              {renderView(viewType, { paneId: "primary" })}
+            </div>
+          ))}
         </div>
       </div>
 
