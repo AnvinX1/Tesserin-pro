@@ -68,6 +68,10 @@ jobs:
         with:
           version: 9
 
+      - name: Install Python setuptools (Windows)
+        if: runner.os == 'Windows'
+        run: pip install setuptools
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -86,6 +90,10 @@ jobs:
 
       - name: Build Electron main process
         run: pnpm tsc -p electron/tsconfig.json
+
+      - name: Install packaging tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y libarchive-tools
 
       - name: Clean output directory
         shell: bash
