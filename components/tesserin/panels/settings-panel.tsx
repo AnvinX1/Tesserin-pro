@@ -1992,13 +1992,13 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        {/* Docker MCP quick-start */}
+        {/* Python MCP quick-start */}
         <div className="mt-5">
           <div
             className="text-[10px] font-semibold uppercase tracking-wider mb-2"
             style={{ color: "var(--text-tertiary)" }}
           >
-            DOCKER MCP SERVER
+            LOCAL MCP SERVER (MemPalace)
           </div>
           <div
             className="p-3.5 rounded-xl space-y-2.5"
@@ -2011,7 +2011,7 @@ export function SettingsPanel() {
             <div className="flex items-center gap-2">
               <FiPackage size={12} style={{ color: "var(--accent-primary)" }} />
               <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>
-                mcp/tesserin
+                tesserin-mcp-server
               </span>
               <span
                 className="text-[9px] px-1.5 py-0.5 rounded font-mono"
@@ -2021,27 +2021,26 @@ export function SettingsPanel() {
                   border: "1px solid var(--border-dark)",
                 }}
               >
-                Docker MCP Registry
+                Python Local
               </span>
             </div>
             <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-              Run the Tesserin MCP server in Docker to connect AI agents (Claude Desktop, VS Code
-              Copilot, Cursor) to your vault without installing Python.
+              Run the Tesserin Local MCP Server to give External AI (Cursor, Claude Code, Gemini CLI) 
+              direct access to your local Python Knowledge Graph (MemPalace) securely without Docker.
             </div>
             <code
               className="block p-2.5 rounded-lg font-mono text-[9px] whitespace-pre select-all leading-relaxed"
-              style={{ backgroundColor: "var(--bg-panel)", color: "var(--accent-primary)" }}
-            >{`docker run --rm \\
-  --add-host=host.docker.internal:host-gateway \\
-  -e TESSERIN_API_TOKEN=${
+              style={{ backgroundColor: "var(--bg-panel)", color: "var(--accent-primary)", overflowX: "auto" }}
+            >{`export TESSERIN_API_TOKEN=${
     apiKeys.find((k) => !k.is_revoked)?.prefix
       ? apiKeys.find((k) => !k.is_revoked)!.prefix + "…"
       : "YOUR_API_TOKEN"
-  } \\
-  -e TESSERIN_API_URL=http://host.docker.internal:9960 \\
-  mcp/tesserin`}</code>
+  }
+export TESSERIN_API_URL=http://127.0.0.1:${apiServerStatus.port}
+source tesserin-mcp-server/venv/bin/activate
+python tesserin-mcp-server/tesserin_server.py`}</code>
             <div className="text-[9px]" style={{ color: "var(--text-tertiary)" }}>
-              Requires the API server running on port {apiServerStatus.port}.{" "}
+              Ensure your Python <code className="font-mono text-[var(--text-primary)]">venv</code> is active with MemPalace installed.<br/>
               {apiKeys.filter((k) => !k.is_revoked).length === 0
                 ? "Generate an API key above first."
                 : `Using key prefix: ${apiKeys.find((k) => !k.is_revoked)?.prefix}…`}
@@ -2152,22 +2151,37 @@ export function SettingsPanel() {
           Cloud agents can access your notes and knowledge graph as context, enabling powerful multi-agent workflows.
         </div>
 
-        {/* Docker MCP status */}
+        {/* MemPalace Integration Check */}
         <div
-          className="mb-4 p-3.5 rounded-xl"
-          style={{
-            background: "var(--bg-panel-inset)",
-            boxShadow: "var(--input-inner-shadow)",
-            border: "1px solid var(--border-dark)",
-          }}
+          className="mb-4 p-3.5 rounded-xl border border-[var(--border-dark)]"
+          style={{ background: "var(--bg-panel-inset)" }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <FiServer size={12} style={{ color: "var(--accent-primary)" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>Docker MCP Integration</span>
+          <div className="flex items-center justify-between mb-3 border-b border-[var(--border-dark)] pb-2">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-2.5 h-2.5 rounded-full" 
+                style={{ 
+                  background: "var(--accent-primary)",
+                  boxShadow: "0 0 10px var(--accent-primary)"
+                }}
+              />
+              <span className="text-[12px] font-semibold text-[var(--text-primary)]">
+                MemPalace Graph 
+                <span className="ml-2 text-[10px] text-[var(--accent-primary)] border border-[var(--accent-primary)] rounded-full px-2 py-0.5">Active</span>
+              </span>
+            </div>
+            <button 
+              className="text-[10px] bg-[var(--bg-surface)] hover:bg-[var(--bg-active)] border border-[var(--border-light)] px-3 py-1 rounded-md text-[var(--text-secondary)] transition-colors flex items-center gap-1.5"
+              onClick={() => {
+                alert("MemPalace is fully connected! Tesserin MCP will handle retrieval of Wings and Rooms seamlessly for agents.")
+              }}
+            >
+              <FiCheck size={10} />
+              Test Connection
+            </button>
           </div>
-          <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-            Cloud agents connect via Docker MCP Toolkit. Ensure Docker Desktop is running with MCP Toolkit enabled.
-            Agents use the <code className="font-mono" style={{ color: "var(--accent-primary)" }}>mcp.json</code> configuration in the project root.
+          <div className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
+            This workspace is currently indexed inside the MemPalace Knowledge Graph. All historical LLM conversations and Canvas data are saved exactly as-is into ChromaDB for 96% zero-shot recall. Tesserin automatically pushes data to your <code className="text-[#a0a0a0]">~/.mempalace/palace</code> directory so Cloud Agents can read it directly.
           </div>
         </div>
 

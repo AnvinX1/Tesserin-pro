@@ -106,31 +106,33 @@ export function TerminalView({ paneId }: TerminalViewProps) {
 
         const isCurrentlyDark = terminalTheme === "dark"
         const textPrimary  = getVar("--text-primary",   isCurrentlyDark ? "#e4e4e7" : "#1a1a1a")
-        const textSecondary = getVar("--text-secondary", isCurrentlyDark ? "#888888" : "#6e6960")
+        const textSecondary = getVar("--text-secondary", isCurrentlyDark ? "#888888" : "#52525b")
         const accentPrimary = getVar("--accent-primary", "#FACC15")
 
+        // For light mode, we use darker variants of standard ANSI colors 
+        // to prevent colors like "bright white" or "yellow" becoming invisible on standard light backgrounds.
         return isCurrentlyDark ? {
-            background: "transparent",
+            background: isCurrentlyDark ? "#00000000" : "#ffffff",
             foreground: textPrimary,
             cursor: accentPrimary,
             cursorAccent: "#0d0d0d",
             selectionBackground: "rgba(63,63,70,0.8)",
-            black: "#18181b",   red: "#ef4444",   green: "#22c55e",   yellow: "#eab308",
-            blue: "#3b82f6",    magenta: "#a855f7", cyan: "#06b6d4",   white: textPrimary,
-            brightBlack: textSecondary, brightRed: "#f87171",   brightGreen: "#4ade80",
-            brightYellow: "#facc15",    brightBlue: "#60a5fa", brightMagenta: "#c084fc",
-            brightCyan: "#22d3ee",      brightWhite: "#f4f4f5",
+            black: "#18181b",       red: "#ef4444",       green: "#22c55e",       yellow: "#eab308",
+            blue: "#3b82f6",        magenta: "#a855f7",   cyan: "#06b6d4",        white: textPrimary,
+            brightBlack: textSecondary, brightRed: "#f87171", brightGreen: "#4ade80",
+            brightYellow: "#facc15",brightBlue: "#60a5fa",    brightMagenta: "#c084fc",
+            brightCyan: "#22d3ee",  brightWhite: "#f4f4f5",
         } : {
-            background: "transparent",
+            background: isCurrentlyDark ? "#00000000" : "#ffffff",
             foreground: textPrimary,
             cursor: accentPrimary,
             cursorAccent: "#fefefe",
             selectionBackground: "rgba(212,212,216,0.8)",
-            black: "#1a1a1a",  red: "#dc2626",   green: "#16a34a",  yellow: "#ca8a04",
-            blue: "#2563eb",   magenta: "#9333ea", cyan: "#0891b2",  white: textPrimary,
-            brightBlack: textSecondary, brightRed: "#ef4444",  brightGreen: "#22c55e",
-            brightYellow: "#eab308",    brightBlue: "#3b82f6", brightMagenta: "#a855f7",
-            brightCyan: "#06b6d4",      brightWhite: "#fafafa",
+            black: "#1a1a1a",       red: "#dc2626",       green: "#16a34a",       yellow: "#ca8a04",
+            blue: "#2563eb",        magenta: "#9333ea",   cyan: "#0891b2",        white: textPrimary,
+            brightBlack: textSecondary, brightRed: "#b91c1c", brightGreen: "#15803d",
+            brightYellow: "#b45309",brightBlue: "#1d4ed8",    brightMagenta: "#7e22ce",
+            brightCyan: "#0e7490",  brightWhite: "#3f3f46", // Dark gray instead of invisible white
         }
     }, [terminalTheme])
 

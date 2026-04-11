@@ -7,7 +7,7 @@
 
 :root {
   /* Warm Stone / Cream light mode — gentle on the eyes */
-  --background: oklch(0.985 0.005 80);
+  --background: oklch(1 0 100);
   --foreground: oklch(0.22 0.01 60);
   --card: oklch(0.98 0.004 80);
   --card-foreground: oklch(0.22 0.01 60);
@@ -128,4 +128,14 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Override xterm.css forcing a black background on the viewport */
+.xterm .xterm-viewport {
+    background-color: transparent !important;
+}
+
+/* Force transparency everywhere inside the xterm container */
+.xterm, .xterm-viewport, .xterm-screen, .xterm-text-layer {
+    background-color: transparent !important;
 }

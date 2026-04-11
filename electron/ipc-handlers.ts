@@ -4,7 +4,7 @@ import * as ai from './ai-service'
 import * as kb from './knowledge-base'
 import { mcpClientManager, type McpServerConfig } from './mcp-client'
 import { cloudAgentManager, type CloudAgentType, type AgentPermission } from './cloud-agents'
-import { generateApiKey, startApiServer, stopApiServer, getApiServerStatus } from './api-server'
+import { generateApiKey, startApiServer, stopApiServer, getApiServerStatus, getInternalTerminalToken } from './api-server'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
@@ -123,6 +123,17 @@ function safeEnv(): Record<string, string> {
     for (const key of SAFE_ENV_KEYS) {
         if (process.env[key]) env[key] = process.env[key]!
     }
+
+    try {
+        const token = getInternalTerminalToken()
+        const status = getApiServerStatus()
+        env['TESSERIN_API_TOKEN'] = token
+        env['TESSERIN_API_URL'] = `http://127.0.0.1:${status.port}`
+        env['MEMPALACE_ENABLED'] = '1' // Ensures MemPalace MCP starts directly within the terminal if used
+    } catch {
+        // Ignore if services aren't ready
+    }
+
     return env
 }
 

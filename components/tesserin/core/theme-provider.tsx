@@ -202,18 +202,25 @@ const THEME_STYLES = `
 
   /* Loading screen animations */
   @keyframes loading-progress {
-    0%   { width: 0%; }
-    100% { width: 100%; }
+    0%   { width: 0%; filter: hue-rotate(0deg); }
+    50%  { width: 70%; filter: hue-rotate(15deg); }
+    100% { width: 100%; filter: hue-rotate(-5deg); }
   }
 
   @keyframes loading-pulse {
-    0%, 100% { opacity: 0.4; transform: translate(-50%, -60%) scale(1); }
-    50%      { opacity: 1; transform: translate(-50%, -60%) scale(1.15); }
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -60%) scale(0.95); filter: blur(20px); }
+    50%      { opacity: 0.8; transform: translate(-50%, -60%) scale(1.1); filter: blur(30px); }
   }
 
   @keyframes loading-float {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
-    50%      { transform: translateY(-18px) scale(1.3); opacity: 0.7; }
+    0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); opacity: 0.2; }
+    33%      { transform: translateY(-15px) scale(1.2) rotate(45deg); opacity: 0.6; }
+    66%      { transform: translateY(-5px) scale(0.9) rotate(-15deg); opacity: 0.4; }
+  }
+
+  @keyframes loading-text-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
   }
 
   /* ── Global UI readability ────────────────────────────────── */
