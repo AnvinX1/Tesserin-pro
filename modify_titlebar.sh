@@ -1,3 +1,4 @@
+cat > components/tesserin/core/title-bar.tsx << 'INNER_EOF'
 import React, { useEffect, useState } from "react"
 import { FiMinus, FiSquare, FiX } from "react-icons/fi"
 import { TesserinLogo } from "./tesserin-logo"
@@ -77,3 +78,4 @@ export function TitleBar() {
         </div>
     )
 }
+INNER_EOF

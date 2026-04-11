@@ -149,6 +149,16 @@ function safeEnv() {
         if (process.env[key])
             env[key] = process.env[key];
     }
+    try {
+        const token = (0, api_server_1.getInternalTerminalToken)();
+        const status = (0, api_server_1.getApiServerStatus)();
+        env['TESSERIN_API_TOKEN'] = token;
+        env['TESSERIN_API_URL'] = `http://127.0.0.1:${status.port}`;
+        env['MEMPALACE_ENABLED'] = '1'; // Ensures MemPalace MCP starts directly within the terminal if used
+    }
+    catch {
+        // Ignore if services aren't ready
+    }
     return env;
 }
 /**

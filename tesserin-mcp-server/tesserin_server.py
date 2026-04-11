@@ -18,6 +18,13 @@ from typing import AsyncGenerator
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+try:
+    from mempalace.searcher import search_memories
+    from mempalace.knowledge_graph import KnowledgeGraph
+    MEMPALACE_ENABLED = True
+except ImportError:
+    MEMPALACE_ENABLED = False
+
 # ─── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -1057,6 +1064,74 @@ async def check_health() -> str:
     except Exception as e:
         logger.error("check_health failed", exc_info=True)
         return f"Tesserin API unreachable: {e}\nURL: {TESSERIN_API_URL}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MEMPALACE INTEGRATION TOOLS
+# ══════════════════════════════════════════════════════════════════════════════
+if MEMPALACE_ENABLED:
+    logger.info("Initializing MemPalace tools.")
+
+    @mcp.tool()
+    async def mempalace_search_memory(query: str, wing: str = None, room: str = None) -> str:
+        """
+        Search Tesserin's advanced local memory (MemPalace engine) for past contexts, decisions, or conversations.
+        
+        Args:
+            query: The semantic search string.
+            wing: The specific Workspace or Project to search within.
+            room: The specific Session or Document to search within.
+        """
+        logger.info(f"mempalace_search_memory(query={query}, wing={wing}, room={room})")
+        try:
+            mempalace_path = os.path.expanduser("~/.mempalace/palace")
+            results = search_memories(query, palace_path=mempalace_path, wing=wing, room=room)
+            if not results:
+                return "No matching memories found in the palace."
+            
+            if isinstance(results, str):
+                return results
+
+            if isinstance(results, dict):
+                if 'error' in results:
+                    return f"MemPalace Error: {results.get('error')}. {results.get('hint', '')}"
+                if 'documents' in results:
+                    # Handle chromadb raw response
+                    docs = results.get('documents', [[]])[0]
+                    metas = results.get('metadatas', [[]])[0]
+                    formatted = []
+                    for d, m in zip(docs, metas):
+                        r = m.get('room', 'Unknown')
+                        formatted.append(f"Room: {r}\nMemory: {d}")
+                    return "\n\n---\n\n".join(formatted) if formatted else "No matching memories found in the palace."
+
+            # If results is a list of dicts (or somehow iterates weirdly)
+            if isinstance(results, list):
+                return "\n\n---\n\n".join([f"Room: {r.get('room', 'Unknown')}\nMemory: {r.get('content', '')}" for r in results])
+                
+            return str(results)
+        except Exception as e:
+            logger.error("mempalace_search_memory failed", exc_info=True)
+            return f"MemPalace search Error: {e}"
+
+    @mcp.tool()
+    async def mempalace_query_graph(entity: str) -> str:
+        """
+        Query Tesserin's advanced context graph (MemPalace engine) to understand relationships of an entity.
+        
+        Args:
+            entity: The person, topic, or concept to investigate (e.g., 'AuthMigration', 'Kai')
+        """
+        logger.info(f"mempalace_query_graph(entity={entity})")
+        try:
+            kg = KnowledgeGraph()
+            triples = kg.query_entity(entity)
+            if not triples:
+                return f"Entity '{entity}' not found in the Knowledge Graph."
+            return "\n".join([f"{t[0]} -> {t[1]} -> {t[2]}" for t in triples])
+        except Exception as e:
+            logger.error("mempalace_query_graph failed", exc_info=True)
+            return f"MemPalace Knowledge Graph Error: {e}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -54,10 +54,33 @@ export function generateApiKey(): { rawKey: string; keyHash: string; prefix: str
   return { rawKey, keyHash, prefix }
 }
 
+let internalTerminalToken = ""
+export function getInternalTerminalToken(): string {
+  if (!internalTerminalToken) {
+    const bytes = randomBytes(32)
+    internalTerminalToken = `tsd_${bytes.toString("hex")}`
+  }
+  return internalTerminalToken
+}
+
 /**
  * Verify an API key against stored hashes using constant-time comparison.
  */
 function verifyApiKey(rawKey: string): ApiKey | null {
+  if (internalTerminalToken && rawKey === internalTerminalToken) {
+    return {
+      id: "internal-terminal",
+      name: "Integrated Terminal Agent",
+      key_hash: "",
+      prefix: "tsd_terminal",
+      permissions: '["*"]',
+      created_at: new Date().toISOString(),
+      expires_at: null,
+      last_used_at: new Date().toISOString(),
+      is_revoked: 0
+    }
+  }
+
   const { createHash } = require("crypto")
   const inputHash = createHash("sha256").update(rawKey).digest("hex")
   const keys = db.listApiKeys()

@@ -1,13 +1,14 @@
+#!/bin/bash
+cat > components/tesserin/workspace/markdown-editor.tsx << 'INNER_EOF'
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { FiPlus, FiTrash2, FiLink2, FiChevronDown, FiFileText, FiMenu } from "react-icons/fi"
 import { useNotes, parseWikiLinks } from "@/lib/notes-store"
-import { useTesserinTheme } from "@/components/tesserin/core/theme-provider"
 
 // Toast UI Editor
 import '@toast-ui/editor/dist/toastui-editor.css';
-import '@toast-ui/editor/dist/theme/toastui-editor-dark.css';
+import '@toast-ui/editor/dist/theme/dark.css';
 import { Editor } from '@toast-ui/react-editor';
 
 import {
@@ -49,7 +50,19 @@ export function MarkdownEditor({ noteId: externalNoteId }: MarkdownEditorProps) 
   const activeId = externalNoteId !== undefined ? externalNoteId : selectedNoteId
   const selectedNote = useMemo(() => notes.find((n) => n.id === activeId) ?? null, [notes, activeId])
   
-  const { isDark: isDarkTheme } = useTesserinTheme()
+  const [isDarkTheme, setIsDarkTheme] = useState(false)
+
+  useEffect(() => {
+    // Detect if dark mode class is on document
+    const isDark = document.documentElement.classList.contains("dark")
+    setIsDarkTheme(isDark)
+
+    const observer = new MutationObserver(() => {
+      setIsDarkTheme(document.documentElement.classList.contains("dark"))
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (editorRef.current && selectedNote) {
@@ -116,7 +129,7 @@ export function MarkdownEditor({ noteId: externalNoteId }: MarkdownEditorProps) 
   }
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-app)] transition-colors relative z-0">
+    <div className="h-full flex flex-col pt-[3.5rem] bg-white dark:bg-transparent">
       {/* Dynamic styles to override toast-ui's pure white if in light mode, but the user explicitly asked for white. We will let it be naturally white. */}
       <style>{`
         .toastui-editor-defaultUI { 
@@ -135,14 +148,14 @@ export function MarkdownEditor({ noteId: externalNoteId }: MarkdownEditorProps) 
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowNoteList(!showNoteList)}
-              className="flex items-center gap-2 hover:bg-black/10 dark:hover:bg-white/10 px-2 py-1.5 rounded-md transition-colors"
+              className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10 px-2 py-1.5 rounded-md transition-colors"
             >
               <FiMenu className="w-4 h-4 text-muted-foreground" />
               <FiChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
             {showNoteList && (
-              <div className="absolute top-full left-0 mt-2 w-64 glass-panel rounded-xl shadow-2xl border border-[var(--border-dark)] z-50 overflow-hidden flex flex-col max-h-[60vh] bg-[var(--bg-panel)] backdrop-blur-3xl">
-                <div className="p-2 border-b flex justify-between items-center bg-black/5 dark:bg-white/5" style={{ borderColor: 'var(--border-dark)' }}>
+              <div className="absolute top-full left-0 mt-2 w-64 glass-panel rounded-xl shadow-2xl border z-50 overflow-hidden flex flex-col max-h-[60vh]">
+                <div className="p-2 border-b flex justify-between items-center bg-black/5 dark:bg-white/5">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-2">Your Notes</span>
                   <button onClick={handleCreateNote} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-md" title="New Note">
                     <FiPlus className="w-4 h-4" />
@@ -258,3 +271,4 @@ export function MarkdownEditor({ noteId: externalNoteId }: MarkdownEditorProps) 
     </div>
   )
 }
+INNER_EOF

@@ -71,10 +71,6 @@ function buildHierarchy(nodes: GraphNode[], links: GraphLink[]): HierarchyDatum 
     return { id: "empty", title: "No Notes", linkCount: 0, children: [] }
   }
 
-  // Pick root = most connected node
-  const sorted = [...nodes].sort((a, b) => b.linkCount - a.linkCount)
-  const rootId = sorted[0].id
-
   // Adjacency list (undirected)
   const adj = new Map<string, Set<string>>()
   nodes.forEach((n) => adj.set(n.id, new Set()))
@@ -84,7 +80,7 @@ function buildHierarchy(nodes: GraphNode[], links: GraphLink[]): HierarchyDatum 
   })
 
   // BFS to build tree
-  const visited = new Set<string>([rootId])
+  const visited = new Set<string>()
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
   function buildNode(id: string): HierarchyDatum {
@@ -107,21 +103,28 @@ function buildHierarchy(nodes: GraphNode[], links: GraphLink[]): HierarchyDatum 
     }
   }
 
-  const root = buildNode(rootId)
+  // Sort nodes so we start BFS from most connected nodes
+  const sorted = [...nodes].sort((a, b) => b.linkCount - a.linkCount)
+  const components: HierarchyDatum[] = []
 
-  // Add orphan nodes as children of root
-  nodes.forEach((n) => {
+  sorted.forEach((n) => {
     if (!visited.has(n.id)) {
-      root.children.push({
-        id: n.id,
-        title: n.title,
-        linkCount: n.linkCount,
-        children: [],
-      })
+      visited.add(n.id)
+      components.push(buildNode(n.id))
     }
   })
 
-  return root
+  if (components.length === 1) {
+    return components[0]
+  }
+
+  // Virtual root to tie all independent components
+  return {
+    id: "__virtual_root__",
+    title: "",
+    linkCount: 0,
+    children: components,
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -403,7 +406,7 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         .attr("y1", (d) => d.sy)
         .attr("x2", (d) => d.tx)
         .attr("y2", (d) => d.ty)
-        .attr("stroke", "var(--accent-primary)")
+        .attr("stroke", "var(--text-secondary)")
         .attr("stroke-width", 1)
         .attr("stroke-opacity", 0)
         .transition()
@@ -419,6 +422,7 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         linkCount: number
         x: number
         y: number
+        depth?: number
       }[],
       draggable: boolean,
     ) {
@@ -448,46 +452,74 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         .delay((_d, i) => 80 + i * 25)
         .style("opacity", 1)
 
-      // Node circle — golden glow on every node
+      // Node circle — subtle stylistic changes based on depth
       nodeGroup
         .append("circle")
-        .attr("r", (d) => Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)))
+        .attr("r", (d) => {
+          // If in mind/radial layout, we can emphasize the structural roots
+          if (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0) return 6.5
+          return Math.max(3.5, Math.min(8, 3.5 + d.linkCount * 0.8))
+        })
         .attr("fill", (d) =>
           d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
-            : "var(--graph-node)",
+            : (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0)
+            ? "var(--text-primary)" // Make roots pop more naturally
+            : "var(--text-secondary)",
         )
         .attr("stroke", (d) =>
           d.id === selectedNoteIdRef.current
-            ? "var(--accent-primary)"
-            : "var(--border-mid)",
+            ? "var(--bg-app)"
+            : "var(--border-dark)",
         )
-        .attr("stroke-width", (d) => (d.id === selectedNoteIdRef.current ? 2.5 : 1))
+        .attr("stroke-width", 1)
         .attr("filter", (d) =>
           d.id === selectedNoteIdRef.current
             ? "url(#gold-glow-active)"
-            : "url(#gold-glow)",
+            : "none",
         )
         .style("transition", "fill 0.3s, stroke 0.3s, stroke-width 0.3s")
 
-      // Label — ALWAYS visible with note name
+      // Label — fade out deeper leafs to avoid noise in large graphs
       nodeGroup
         .append("text")
         .text((d) => truncTitle(d.title, d.linkCount))
         .attr(
           "y",
-          (d) => -(Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)) + 8),
+          (d) => {
+            const rad = (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0) ? 6.5 : Math.max(3.5, Math.min(8, 3.5 + d.linkCount * 0.8))
+            return -(rad + 6)
+          }
         )
         .attr("text-anchor", "middle")
         .attr("fill", (d) =>
-          d.id === selectedNoteIdRef.current ? "#FACC15" : "var(--text-primary)",
+          d.id === selectedNoteIdRef.current 
+            ? "var(--text-primary)" 
+            : (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0)
+            ? "var(--text-primary)" 
+            : "var(--text-muted)",
         )
-        .attr("font-size", (d) => (d.id === selectedNoteIdRef.current ? 12 : 10))
-        .attr("font-weight", (d) => (d.id === selectedNoteIdRef.current ? 700 : 500))
+        .attr("font-size", (d) => {
+          if (d.id === selectedNoteIdRef.current) return 12
+          if (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0) return 11
+          return 9.5
+        })
+        .attr("font-weight", (d) => {
+          if (d.id === selectedNoteIdRef.current) return 600
+          if (d.depth !== undefined && d.depth <= 1 && d.linkCount > 0) return 500
+          return 400
+        })
         .attr("font-family", "var(--font-sans)")
+        .attr("stroke", "var(--bg-app)")
+        .attr("stroke-width", 2)
+        .attr("paint-order", "stroke fill")
         .style("pointer-events", "none")
-        .style("filter", "url(#text-glow)")
-        .style("opacity", (d) => (d.id === selectedNoteIdRef.current ? 1 : 0.85))
+        .style("opacity", (d) => {
+          if (d.id === selectedNoteIdRef.current) return 1
+          // Dim labels progressively further down the tree
+          if (d.depth !== undefined && d.depth > 2) return 0.25
+          return 0.65
+        })
         .style("transition", "opacity 0.25s, fill 0.25s, font-size 0.25s")
 
       // Hover: intensify glow + brighten label
@@ -496,27 +528,27 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         group
           .select("circle")
           .attr("filter", "url(#gold-glow-active)")
-          .attr("stroke", "var(--accent-primary)")
-          .attr("stroke-width", 2.5)
+          .attr("stroke", "var(--text-primary)")
+          .attr("stroke-width", 1.5)
         group
           .select("text")
           .style("opacity", 1)
-          .attr("fill", "#FACC15")
-          .attr("font-weight", "700")
+          .attr("fill", "var(--text-primary)")
+          .attr("font-weight", "600")
       })
       nodeGroup.on("mouseleave.glow", function (_event, d: any) {
         if (d.id !== selectedNoteIdRef.current) {
           const group = d3.select(this)
           group
             .select("circle")
-            .attr("filter", "url(#gold-glow)")
-            .attr("stroke", "rgba(250, 204, 21, 0.3)")
+            .attr("filter", "none")
+            .attr("stroke", "var(--border-dark)")
             .attr("stroke-width", 1)
           group
             .select("text")
-            .style("opacity", 0.85)
-            .attr("fill", "var(--text-primary)")
-            .attr("font-weight", "500")
+            .style("opacity", 0.6)
+            .attr("fill", "var(--text-muted)")
+            .attr("font-weight", "400")
         }
       })
 
@@ -566,28 +598,31 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
           d3
             .forceLink<SimNode, SimLink>(simLinks)
             .id((d) => d.id)
-            .distance(140),
+            .distance(45) /* Tighter link distance */
+            .strength(0.6),
         )
         .force(
           "charge",
-          d3.forceManyBody().strength(-350).distanceMax(500),
+          d3.forceManyBody().strength(-140).distanceMax(500), /* Softer repulsion, classic physics */
         )
         .force("center", d3.forceCenter(0, 0))
-        .force("collision", d3.forceCollide().radius(30))
-        .alphaDecay(0.018)
+        .force("x", d3.forceX(0).strength(0.04)) /* Subtle gravity pulling scattered nodes back to center */
+        .force("y", d3.forceY(0).strength(0.04))
+        .force("collision", d3.forceCollide().radius((d: any) => Math.max(4, Math.min(10, 4 + d.linkCount)) + 12))
+        .alphaDecay(0.02)
 
       simulationRef.current = simulation
 
-      // Links — gold-tinted
+      // Links — subtle, low opacity
       const linkSelection = g
         .selectAll(".graph-link")
         .data(simLinks)
         .enter()
         .append("line")
         .attr("class", "graph-link")
-        .attr("stroke", "var(--accent-primary)")
-        .attr("stroke-width", 1)
-        .attr("stroke-opacity", 0.15)
+        .attr("stroke", "var(--text-secondary)") /* Subtle link color similar to Obsidian */
+        .attr("stroke-width", 0.6)
+        .attr("stroke-opacity", 0.3)
 
       // Nodes
       const nodeGroup = g
@@ -601,27 +636,27 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         .on("mouseenter", (_event, d) => setHoveredNode(d.id))
         .on("mouseleave", () => setHoveredNode(null))
 
-      // Circle with golden glow
+      // Small elegant circles for nodes
       nodeGroup
         .append("circle")
-        .attr("r", (d) => Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)))
+        .attr("r", (d) => Math.max(3.5, Math.min(8, 3.5 + d.linkCount * 0.8))) /* Tiny nodes like Obsidian */
         .attr("fill", (d) =>
           d.id === selectedNoteIdRef.current
             ? "var(--accent-primary)"
-            : "var(--graph-node)",
+            : "var(--text-secondary)", /* Muted by default */
         )
         .attr("stroke", (d) =>
           d.id === selectedNoteIdRef.current
-            ? "var(--accent-primary)"
-            : "var(--border-mid)",
+            ? "var(--bg-app)"
+            : "var(--border-dark)",
         )
-        .attr("stroke-width", (d) => (d.id === selectedNoteIdRef.current ? 2.5 : 1))
+        .attr("stroke-width", 1) /* Very light stroke */
         .attr("filter", (d) =>
           d.id === selectedNoteIdRef.current
             ? "url(#gold-glow-active)"
-            : "url(#gold-glow)",
+            : "none", /* Normal nodes shouldn't glow excessively */
         )
-        .style("transition", "fill 0.3s, stroke 0.3s")
+        .style("transition", "fill 0.2s, r 0.2s")
 
       // Label — always visible
       nodeGroup
@@ -629,18 +664,21 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         .text((d) => truncTitle(d.title, d.linkCount))
         .attr(
           "y",
-          (d) => -(Math.max(6, Math.min(18, 6 + d.linkCount * 2.5)) + 8),
+          (d) => -(Math.max(3.5, Math.min(8, 3.5 + d.linkCount * 0.8)) + 6),
         )
         .attr("text-anchor", "middle")
         .attr("fill", (d) =>
-          d.id === selectedNoteIdRef.current ? "#FACC15" : "var(--text-primary)",
+          d.id === selectedNoteIdRef.current ? "var(--text-primary)" : "var(--text-muted)",
         )
         .attr("font-size", (d) => (d.id === selectedNoteIdRef.current ? 12 : 10))
-        .attr("font-weight", (d) => (d.id === selectedNoteIdRef.current ? 700 : 500))
+        .attr("font-weight", (d) => (d.id === selectedNoteIdRef.current ? 600 : 400))
         .attr("font-family", "var(--font-sans)")
+        .attr("stroke", "var(--bg-app)")
+        .attr("stroke-width", 2)
+        .attr("paint-order", "stroke fill")
         .style("pointer-events", "none")
-        .style("filter", "url(#text-glow)")
-        .style("opacity", (d) => (d.id === selectedNoteIdRef.current ? 1 : 0.85))
+        .style("opacity", (d) => (d.id === selectedNoteIdRef.current ? 1 : 0.6))
+        .style("transition", "opacity 0.25s, fill 0.25s, font-size 0.25s")
 
       // Hover effects
       nodeGroup.on("mouseenter.glow", function () {
@@ -648,27 +686,27 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         group
           .select("circle")
           .attr("filter", "url(#gold-glow-active)")
-          .attr("stroke", "var(--accent-primary)")
-          .attr("stroke-width", 2.5)
+          .attr("stroke", "var(--text-primary)")
+          .attr("stroke-width", 1.5)
         group
           .select("text")
           .style("opacity", 1)
-          .attr("fill", "#FACC15")
-          .attr("font-weight", "700")
+          .attr("fill", "var(--text-primary)")
+          .attr("font-weight", "600")
       })
       nodeGroup.on("mouseleave.glow", function (_event, d: any) {
         if (d.id !== selectedNoteIdRef.current) {
           const group = d3.select(this)
           group
             .select("circle")
-            .attr("filter", "url(#gold-glow)")
-            .attr("stroke", "rgba(250, 204, 21, 0.3)")
+            .attr("filter", "none")
+            .attr("stroke", "var(--border-dark)")
             .attr("stroke-width", 1)
           group
             .select("text")
-            .style("opacity", 0.85)
-            .attr("fill", "var(--text-primary)")
-            .attr("font-weight", "500")
+            .style("opacity", 0.6)
+            .attr("fill", "var(--text-muted)")
+            .attr("font-weight", "400")
         }
       })
 
@@ -732,18 +770,19 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
       const root = d3.hierarchy(hierarchy)
       const treeLayout = d3
         .tree<HierarchyDatum>()
-        .size([height * 0.8, width * 0.7])
-        .separation((a, b) => (a.parent === b.parent ? 1.2 : 2))
+        .size([height * 0.85, width * 0.75])
+        .separation((a, b) => (a.parent === b.parent ? 1.5 : 2.5)) // Spread it out more naturally
 
       treeLayout(root)
 
       // Offset to center
-      const offsetX = -(width * 0.35)
-      const offsetY = -(height * 0.4)
+      const offsetX = -(width * 0.375)
+      const offsetY = -(height * 0.425)
 
-      // Links as curved paths — gold-tinted with entrance animation
+      // Enhance the curved paths with organic flowing splines and tapering thickness
+      const actualLinks = root.links().filter((l) => l.source.data.id !== "__virtual_root__" && l.target.data.id !== "__virtual_root__")
       g.selectAll(".graph-link")
-        .data(root.links())
+        .data(actualLinks)
         .enter()
         .append("path")
         .attr("class", "graph-link")
@@ -752,25 +791,30 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
           const sy = (d.source as any).x + offsetY
           const tx = (d.target as any).y + offsetX
           const ty = (d.target as any).x + offsetY
-          return `M${sx},${sy} C${(sx + tx) / 2},${sy} ${(sx + tx) / 2},${ty} ${tx},${ty}`
+          // Smoother, sweeping bezier curve
+          return `M${sx},${sy} C${sx + (tx - sx) * 0.4},${sy} ${tx - (tx - sx) * 0.4},${ty} ${tx},${ty}`
         })
         .attr("fill", "none")
-        .attr("stroke", "var(--accent-primary)")
-        .attr("stroke-width", 1.2)
+        .attr("stroke", "var(--text-secondary)")
+        .attr("stroke-width", (d) => Math.max(0.4, 2.5 - (d.source.depth || 0) * 0.6)) // Tapering edges
+        .attr("stroke-linecap", "round")
         .attr("stroke-opacity", 0)
         .transition()
         .duration(800)
         .delay((_d, i) => i * 18)
-        .attr("stroke-opacity", 0.2)
+        .attr("stroke-opacity", (d) => Math.max(0.1, 0.45 - (d.source.depth || 0) * 0.08)) // Darker roots, faint leaves
 
       // Nodes
-      const positions = root.descendants().map((d) => ({
-        id: d.data.id,
-        title: d.data.title,
-        linkCount: d.data.linkCount,
-        x: (d as any).y + offsetX,
-        y: (d as any).x + offsetY,
-      }))
+      const positions = root.descendants()
+        .filter((d) => d.data.id !== "__virtual_root__")
+        .map((d) => ({
+          id: d.data.id,
+          title: d.data.title,
+          linkCount: d.data.linkCount,
+          x: (d as any).y + offsetX,
+          y: (d as any).x + offsetY,
+          depth: d.depth,
+        }))
 
       renderNodes(positions, false)
       // Auto-fit the tree layout into the viewport on fresh renders
@@ -783,14 +827,31 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
     if (mode === "radial") {
       const hierarchy = buildHierarchy(graph.nodes, graph.links)
       const root = d3.hierarchy(hierarchy)
-      const radius = Math.min(width, height) * 0.38
+      const radius = Math.min(width, height) * 0.45
 
-      const clusterLayout = d3
-        .cluster<HierarchyDatum>()
+      const treeLayout = d3
+        .tree<HierarchyDatum>()
         .size([2 * Math.PI, radius])
-        .separation((a, b) => (a.parent === b.parent ? 1 : 2))
+        .separation((a, b) => (a.parent === b.parent ? 1 : 2) / (a.depth || 1))
 
-      clusterLayout(root)
+      treeLayout(root)
+
+      // Draw elegant subtle concentric grid lines (radar effect)
+      const ringData = [0.33, 0.66, 1].map(f => radius * f)
+      g.selectAll(".radial-grid")
+        .data(ringData)
+        .enter()
+        .insert("circle", ":first-child") // Insert behind everything
+        .attr("class", "radial-grid")
+        .attr("r", d => d)
+        .attr("fill", "none")
+        .attr("stroke", "var(--border-dark)")
+        .attr("stroke-width", 0.5)
+        .style("stroke-dasharray", "4 6")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 0.3)
 
       // Radial link generator
       const radialLink = d3
@@ -801,24 +862,27 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
         .angle((d) => (d as any).x)
         .radius((d) => (d as any).y)
 
-      // Links — gold-tinted with entrance animation
+      // Links — exclude virtual root links
+      const actualLinksRadial = root.links().filter((l) => l.source.data.id !== "__virtual_root__" && l.target.data.id !== "__virtual_root__")
       g.selectAll(".graph-link")
-        .data(root.links())
+        .data(actualLinksRadial)
         .enter()
         .append("path")
         .attr("class", "graph-link")
         .attr("d", radialLink as any)
         .attr("fill", "none")
-        .attr("stroke", "var(--accent-primary)")
-        .attr("stroke-width", 1.2)
+        .attr("stroke", "var(--text-secondary)")
+        .attr("stroke-width", (d) => Math.max(0.3, 1.8 - (d.source.depth || 0) * 0.4)) // Tapering branches
         .attr("stroke-opacity", 0)
         .transition()
         .duration(800)
         .delay((_d, i) => i * 18)
-        .attr("stroke-opacity", 0.2)
+        .attr("stroke-opacity", (d) => Math.max(0.1, 0.4 - (d.source.depth || 0) * 0.05)) // Fades outward
 
       // Nodes at radial positions
-      const positions = root.descendants().map((d) => {
+      const positions = root.descendants()
+        .filter((d) => d.data.id !== "__virtual_root__")
+        .map((d) => {
         const angle = (d as any).x - Math.PI / 2
         const r = (d as any).y
         return {
@@ -827,6 +891,7 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
           linkCount: d.data.linkCount,
           x: r * Math.cos(angle),
           y: r * Math.sin(angle),
+          depth: d.depth,
         }
       })
 
@@ -848,28 +913,28 @@ export function D3GraphView({ onNavigate }: { onNavigate?: (tabId: any) => void 
       .attr("fill", (d: any) =>
         d.id === selectedNoteId
           ? "var(--accent-primary)"
-          : "var(--graph-node)",
+          : "var(--text-secondary)",
       )
       .attr("stroke", (d: any) =>
         d.id === selectedNoteId
-          ? "var(--accent-primary)"
-          : "var(--border-mid)",
+          ? "var(--bg-app)"
+          : "var(--border-dark)",
       )
-      .attr("stroke-width", (d: any) => (d.id === selectedNoteId ? 2.5 : 1))
+      .attr("stroke-width", 1)
       .attr("filter", (d: any) =>
         d.id === selectedNoteId
           ? "url(#gold-glow-active)"
-          : "url(#gold-glow)",
+          : "none",
       )
 
     // Update text
     svg.selectAll(".graph-node text")
       .attr("fill", (d: any) =>
-        d.id === selectedNoteId ? "#FACC15" : "var(--text-primary)",
+        d.id === selectedNoteId ? "var(--text-primary)" : "var(--text-muted)",
       )
       .attr("font-size", (d: any) => (d.id === selectedNoteId ? 12 : 10))
-      .attr("font-weight", (d: any) => (d.id === selectedNoteId ? 700 : 500))
-      .style("opacity", (d: any) => (d.id === selectedNoteId ? 1 : 0.85))
+      .attr("font-weight", (d: any) => (d.id === selectedNoteId ? 600 : 400))
+      .style("opacity", (d: any) => (d.id === selectedNoteId ? 1 : 0.6))
 
   }, [selectedNoteId])
 

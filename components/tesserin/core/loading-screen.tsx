@@ -82,26 +82,49 @@ export function LoadingScreen({ fadingOut = false }: { fadingOut?: boolean }) {
 
       {/* Logo with scale-in */}
       <div
+        className="relative"
         style={{
           opacity: phase >= 0 ? 1 : 0,
-          transform: phase >= 0 ? "scale(1)" : "scale(0.7)",
-          transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: phase >= 0 ? "scale(1) translateY(0)" : "scale(0.85) translateY(10px)",
+          transition: "all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
         }}
       >
-        <TesserinLogo size={100} animated />
+        <TesserinLogo size={110} animated />
+        {/* Secondary inner glow */}
+        <div 
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: isDark ? "rgba(250, 204, 21, 0.4)" : "rgba(212, 168, 41, 0.4)",
+            filter: "blur(25px)",
+            opacity: phase >= 1 ? 0.6 : 0,
+            transform: phase >= 1 ? "scale(1.2)" : "scale(0.5)",
+            transition: "all 1s cubic-bezier(0.2, 0.8, 0.2, 1)",
+            zIndex: -1
+          }} 
+        />
       </div>
 
       {/* Brand name */}
       <div
         style={{
           opacity: phase >= 1 ? 1 : 0,
-          transform: phase >= 1 ? "translateY(0)" : "translateY(8px)",
-          transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: phase >= 1 ? "translateY(0)" : "translateY(15px)",
+          transition: "all 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s",
         }}
       >
         <p
-          className="mt-5 text-base font-bold tracking-[0.35em] uppercase"
-          style={{ color: isDark ? "#FACC15" : "#d4a829" }}
+          className="mt-6 text-xl font-bold tracking-[0.4em] uppercase"
+          style={{ 
+            color: isDark ? "#FACC15" : "#d4a829",
+            textShadow: isDark ? "0 2px 10px rgba(250, 204, 21, 0.3)" : "none",
+            background: isDark 
+              ? "linear-gradient(90deg, #FACC15 0%, #FFFFFF 50%, #FACC15 100%)" 
+              : "linear-gradient(90deg, #d4a829 0%, #a17f1e 50%, #d4a829 100%)",
+            backgroundSize: "200% auto",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            animation: "loading-text-shimmer 3s linear infinite"
+          }}
         >
           Tesserin
         </p>
@@ -112,48 +135,57 @@ export function LoadingScreen({ fadingOut = false }: { fadingOut?: boolean }) {
         style={{
           opacity: phase >= 1 ? 1 : 0,
           transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
-          transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s",
+          transition: "all 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s",
         }}
       >
         <p
-          className="mt-2 text-sm font-light tracking-wide"
-          style={{ color: isDark ? "rgba(255, 255, 255, 0.35)" : "rgba(44, 42, 38, 0.6)" }}
+          className="mt-3 text-sm font-light tracking-wide"
+          style={{ color: isDark ? "rgba(255, 255, 255, 0.5)" : "rgba(44, 42, 38, 0.7)" }}
         >
           {tagline}
         </p>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar wrapper */}
       <div
-        className="mt-8 w-56 h-[3px] rounded-full overflow-hidden"
+        className="mt-10 w-64 h-[4px] rounded-full overflow-hidden relative backdrop-blur-sm"
         style={{
-          backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(120, 100, 70, 0.1)",
+          backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(120, 100, 70, 0.15)",
           opacity: phase >= 2 ? 1 : 0,
-          transition: "opacity 0.4s ease",
+          transform: phase >= 2 ? "scaleX(1)" : "scaleX(0.8)",
+          transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+          boxShadow: isDark ? "inset 0 1px 3px rgba(0,0,0,0.5)" : "inset 0 1px 2px rgba(0,0,0,0.1)",
         }}
       >
         <div
-          className="h-full rounded-full"
+          className="h-full rounded-full relative"
           style={{
             background: isDark
-              ? "linear-gradient(90deg, #FACC15, #F59E0B)"
-              : "linear-gradient(90deg, #d4a829, #c49b22)",
-            animation: "loading-progress 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards",
+              ? "linear-gradient(90deg, transparent, #FACC15, #F59E0B)"
+              : "linear-gradient(90deg, transparent, #d4a829, #c49b22)",
+            animation: "loading-progress 2.2s cubic-bezier(0.65, 0, 0.15, 1) forwards",
             width: "0%",
-            boxShadow: isDark
-              ? "0 0 12px rgba(250, 204, 21, 0.4)"
-              : "0 0 12px rgba(212, 168, 41, 0.3)",
           }}
-        />
+        >
+          {/* Progress bar glow cap */}
+          <div 
+             className="absolute top-0 right-0 bottom-0 w-8 rounded-full"
+             style={{
+               background: "white",
+               filter: "blur(4px)",
+               opacity: 0.6
+             }}
+          />
+        </div>
       </div>
 
       {/* Version badge */}
       <p
-        className="mt-4 text-[10px] tracking-wider"
+        className="mt-6 text-[11px] tracking-[0.2em] font-medium"
         style={{
-          color: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(51, 48, 43, 0.2)",
+          color: isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(51, 48, 43, 0.3)",
           opacity: phase >= 2 ? 1 : 0,
-          transition: "opacity 0.5s ease 0.3s",
+          transition: "opacity 0.8s ease 0.4s",
         }}
       >
         v1.0.7

@@ -339,7 +339,7 @@ function saveConversations(convos: Conversation[]) {
 
 export function SAMNode() {
   /* ---- Notes store ---- */
-  const { notes, selectedNoteId, selectNote, addNote, updateNote } = useNotes()
+  const { notes, selectedNoteId, selectNote, addNote, updateNote, getNoteByTitle } = useNotes()
 
   const selectedNote = useMemo(
     () => notes.find((n) => n.id === selectedNoteId) ?? null,
@@ -550,7 +550,18 @@ export function SAMNode() {
       }
 
       const noteId = addNote(title)
-      if (body) updateNote(noteId, { content: body })
+      if (body) {
+        updateNote(noteId, { content: body })
+
+        // Automatically create referenced wiki-linked notes so the user's graph populates effortlessly
+        const links = Array.from(body.matchAll(/\[\[(.*?)\]\]/g))
+        const uniqueLinks = Array.from(new Set(links.map(m => m[1].trim()))).filter(Boolean)
+        for (const linkTitle of uniqueLinks) {
+          if (!getNoteByTitle(linkTitle)) {
+             addNote(linkTitle, "", undefined, false)
+          }
+        }
+      }
       selectNote(noteId)
 
       if (activeConvoId) {
